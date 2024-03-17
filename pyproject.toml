@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "anon_excel"
+version = "1.0.0"
+description = "Anonymize explicit person ID's"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {file = "LICENSE.txt"}
+keywords = ["hashing", "anonymize"]
+authors = [
+  {name = "Willem Nieuwenhuis", email = "w.nieuwenhuis@utwente.nl" }
+]
+maintainers = [
+  {name = "Willem Nieuwenhuis", email = "w.nieuwenhuis@utwente.nl" }
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Teachers",
+  "Topic :: Education :: Testing",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3 :: Only",
+]
+dependencies = [
+  "pandas",
+  "openpyxl"
+]
+[project.optional-dependencies]
+dev = ["check-manifest"]
+test = ["pytest", "pytest-cov", "flake8"]
+
+[project.urls]
+"Homepage" = "https://github.com/pypa/anon_excel"
+"Source" = "https://github.com/pypa/anon_excel/"
+
+# The following would provide a command line executable called `sample`
+# which executes the function `main` from this package when invoked.
+[project.scripts]
+sample = "anon_excel:main"
+
+
+# This is configuration specific to the `setuptools` build backend.
+# If you are using a different build backend, you will need to change this.
+[tool.setuptools]
+# If there are data files included in your packages that need to be
+# installed, specify them here.
+# package-data = {"sample" = ["*.dat"]}
