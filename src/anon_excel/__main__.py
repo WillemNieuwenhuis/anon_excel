@@ -1,4 +1,4 @@
-from transform import open_source_excel
+from .transform import main
 
 if __name__ == '__main__':
-    df = open_source_excel('data/pre_eval.xlsx')
+    main()

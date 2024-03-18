@@ -7,3 +7,7 @@ def transform_anonymous(src: pd.DataFrame) -> pd.DataFrame:
 
 def open_source_excel(fn: str) -> pd.DataFrame:
     return pd.read_excel(fn)
+
+
+def main():
+    print('Main entry point')
