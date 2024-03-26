@@ -8,13 +8,11 @@ version = "1.0.0"
 description = "Anonymize explicit person ID's"
 readme = "README.md"
 requires-python = ">=3.8"
-license = {file = "LICENSE.txt"}
+license = { file = "LICENSE.txt" }
 keywords = ["hashing", "anonymize"]
-authors = [
-  {name = "Willem Nieuwenhuis", email = "w.nieuwenhuis@utwente.nl" }
-]
+authors = [{ name = "Willem Nieuwenhuis", email = "w.nieuwenhuis@utwente.nl" }]
 maintainers = [
-  {name = "Willem Nieuwenhuis", email = "w.nieuwenhuis@utwente.nl" }
+  { name = "Willem Nieuwenhuis", email = "w.nieuwenhuis@utwente.nl" },
 ]
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -28,10 +26,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3 :: Only",
 ]
-dependencies = [
-  "pandas",
-  "openpyxl"
-]
+dependencies = ["pandas", "openpyxl"]
 [project.optional-dependencies]
 dev = ["check-manifest"]
 test = ["pytest", "pytest-cov", "flake8"]
@@ -43,7 +38,7 @@ test = ["pytest", "pytest-cov", "flake8"]
 # The following would provide a command line executable called `sample`
 # which executes the function `main` from this package when invoked.
 [project.scripts]
-anonex = "anon_excel.transform:main"
+anonex = "anon_excel.anon:main"
 
 
 # This is configuration specific to the `setuptools` build backend.
