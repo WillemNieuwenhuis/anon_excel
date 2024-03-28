@@ -1,10 +1,11 @@
 import argparse
 from glob import glob
 # import logging
+import os
 from pathlib import Path
 import sys
 import pandas as pd
-from anon_excel.calc_stats import category_to_rank
+from anon_excel.calc_stats import category_to_rank, calc_question_mean
 
 
 def transform_to_anonymous(df: pd.DataFrame, column: str) -> pd.DataFrame:
@@ -83,6 +84,11 @@ def main():
     #     datefmt='%Y-%m-%d %H:%M:%S')
     # log = logging.getLogger(__name__)
 
+    if args.overwrite:
+        prev_result = glob(str(folder) + '/P*anon.xlsx')
+        for fn in prev_result:
+            os.remove(fn)
+
     files = glob(str(folder) + '/P*.xlsx')
     if len(files) == 0:
         print('No excel files found')
@@ -96,6 +102,7 @@ def main():
         df = read_and_clean(name, col[0])
         df = transform_to_anonymous(df, col[0])
         df = category_to_rank(df)
+        df = calc_question_mean(df)
         df.to_excel(outname, index=False)
 
 

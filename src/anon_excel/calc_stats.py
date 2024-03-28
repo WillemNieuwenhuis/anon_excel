@@ -1,9 +1,9 @@
 import pandas as pd
 
 POSITIV_RANK = {'Strongly agree (SA)': 4, 'Agree (A)': 3, 'Neutral (N)': 2,
-                'Disagree (D)': 1, 'Strongly Disagree (D)': 0, '': -1}
+                'Disagree (D)': 1, 'Strongly Disagree (SD)': 0, '': -1}
 NEGATIV_RANK = {'Strongly agree (SA)': 0, 'Agree (A)': 1, 'Neutral (N)': 2,
-                'Disagree (D)': 3, 'Strongly Disagree (D)': 4, '': -1}
+                'Disagree (D)': 3, 'Strongly Disagree (SD)': 4, '': -1}
 RANK_LOOKUP = \
     {'I feel that students in this course care about each other': POSITIV_RANK,
      'I feel that I am encouraged to ask questions': POSITIV_RANK,
@@ -28,12 +28,22 @@ RANK_LOOKUP = \
      }
 
 
-def calc_row_stat():
-    pass
+def calc_question_mean(df: pd.DataFrame) -> pd.DataFrame:
+    qset = set(RANK_LOOKUP.keys())
+    col_set = set(df.columns)
+    select = list(qset.intersection(col_set))
+    for col in select:
+        df = df.astype({col: 'float64'})
+
+    df['mean'] = df[select].mean(axis=1)            # add row averages
+    df.loc['averages', select] = df[select].mean()  # add col averages
+    return df
 
 
 def category_to_rank(df: pd.DataFrame) -> pd.DataFrame:
     for question, ranks in RANK_LOOKUP.items():
-        df[question] = df[question].map(ranks)
+        if question in list(df.columns):
+            df[question] = df[question].replace(r'\s+', ' ', regex=True)
+            df[question] = df[question].map(ranks)
 
     return df
