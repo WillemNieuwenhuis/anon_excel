@@ -1,6 +1,7 @@
 import argparse
 from glob import glob
 # import logging
+from hashlib import blake2b
 import os
 from pathlib import Path
 import sys
@@ -9,14 +10,18 @@ from anon_excel.calc_stats import category_to_rank, calc_question_mean
 
 
 def transform_to_anonymous(df: pd.DataFrame, column: str) -> pd.DataFrame:
-    '''find student number column and anonymize
+    '''find student number column and anonymize, using
+       the blake2b stable hash function
        return unchanged if column is not in dataframe
     '''
     if not column in df.columns:
         return df
 
     series = df[column]
-    df['student_anon'] = series.apply(lambda s: abs(hash(s)))
+    print(series)
+    df['student_anon'] = series.apply(lambda s: blake2b(
+        bytes(s, 'utf-8'), digest_size=8).hexdigest()).astype('string')
+    print(df['student_anon'].values)
     cur_cols = list(df.columns)
     ix = cur_cols.index(column)
     new_cols = cur_cols[0:ix] + cur_cols[-1:] + cur_cols[ix:-1]
@@ -102,8 +107,8 @@ def main():
         df = read_and_clean(name, col[0])
         df = transform_to_anonymous(df, col[0])
         df = category_to_rank(df)
-        df = calc_question_mean(df)
-        df.to_excel(outname, index=False)
+        df_mean = calc_question_mean(df)
+        df_mean.to_excel(outname, index=False)
 
 
 if __name__ == '__main__':
