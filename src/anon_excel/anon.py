@@ -6,27 +6,25 @@ import os
 from pathlib import Path
 import sys
 import pandas as pd
-from anon_excel.calc_stats import category_to_rank, calc_question_mean
+from anon_excel.calc_stats import category_to_rank, calc_question_mean, paired_ttest
 
 
-def transform_to_anonymous(df: pd.DataFrame, column: str) -> pd.DataFrame:
+def transform_to_anonymous(df: pd.DataFrame, on_column: str, to_column: str) -> pd.DataFrame:
     '''find student number column and anonymize, using
        the blake2b stable hash function
        return unchanged if column is not in dataframe
     '''
-    if not column in df.columns:
+    if not on_column in df.columns:
         return df
 
-    series = df[column]
-    print(series)
-    df['student_anon'] = series.apply(lambda s: blake2b(
+    series = df[on_column]
+    df[to_column] = series.apply(lambda s: blake2b(
         bytes(s, 'utf-8'), digest_size=8).hexdigest()).astype('string')
-    print(df['student_anon'].values)
     cur_cols = list(df.columns)
-    ix = cur_cols.index(column)
+    ix = cur_cols.index(on_column)
     new_cols = cur_cols[0:ix] + cur_cols[-1:] + cur_cols[ix:-1]
     df = df[new_cols]
-    df = df.drop(columns=[column])
+    df = df.drop(columns=[on_column])
     return df
 
 
@@ -98,6 +96,7 @@ def main():
     if len(files) == 0:
         print('No excel files found')
 
+    dfs = []
     for dex in files:
         name = Path(dex)
         outname = name.with_stem(name.stem + '_anon')
@@ -105,10 +104,19 @@ def main():
             continue
 
         df = read_and_clean(name, col[0])
-        df = transform_to_anonymous(df, col[0])
+        df = transform_to_anonymous(
+            df, on_column=col[0], to_column='student_anon')
         df = category_to_rank(df)
+        dfs.append(df)
+
+        # task 1: add ranking averages, both to questions (columns)
+        #         as well as studentID (rows)
         df_mean = calc_question_mean(df)
         df_mean.to_excel(outname, index=False)
+
+    # task 2: calculate paired t-test for each question common in
+    #         before and after with student as independent var
+    paired_ttest(dfs[0], dfs[1], 'student_anon')
 
 
 if __name__ == '__main__':

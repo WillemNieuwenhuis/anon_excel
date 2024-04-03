@@ -1,4 +1,5 @@
 import pandas as pd
+from scipy import stats
 
 POSITIV_RANK = {'Strongly agree (SA)': 4, 'Agree (A)': 3, 'Neutral (N)': 2,
                 'Disagree (D)': 1, 'Strongly Disagree (SD)': 0, '': -1}
@@ -47,3 +48,42 @@ def category_to_rank(df: pd.DataFrame) -> pd.DataFrame:
             df[question] = df[question].map(ranks)
 
     return df
+
+
+def paired_ttest_on_question(before: pd.Series, after: pd.Series) -> tuple[float, float]:
+    '''Calculate paired t-test
+       return stat-value and p-value
+    '''
+    res = stats.ttest_rel(before, after)
+    return res['statistic'], res['pvalue']
+
+
+def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str):
+    # first make sure the dataframe are ordered by the same column (student_anon)
+    df_before.sort_values(by=[id_column])
+    df_after.sort_values(by=[id_column])
+
+    # select common questions
+    qset = set(RANK_LOOKUP.keys())
+    col_set_before = set(df_before.columns)
+    col_set_after = set(df_after.columns)
+    common_cols = col_set_before.intersection(col_set_after)
+    questions = list(qset.intersection(common_cols))
+    df_before = df_before[[id_column, *questions]]
+    df_after = df_after[[id_column, *questions]]
+
+    # select common students
+    stud_before = set(df_before[id_column].values)
+    stud_after = set(df_after[id_column].values)
+    stud_common = stud_before.intersection(stud_after)
+    df_bf = df_before[df_before[id_column].isin(stud_common)]
+    df_af = df_after[df_after[id_column].isin(stud_common)]
+
+    quests_before = [f'before_{n:02}' for n in range(1, len(questions)+1)]
+    quests_after = [f'after_{n:02}' for n in range(1, len(questions)+1)]
+    df_bf.columns = [id_column, *quests_before]
+    df_af.columns = [id_column, *quests_after]
+    df_combined = df_bf.merge(df_af, on=id_column)
+
+    df_combined.to_excel('data/combined.xlsx', index=False)
+    # for q in questions:
