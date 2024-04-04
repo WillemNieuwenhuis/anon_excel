@@ -33,10 +33,8 @@ def transform_to_anonymous(df: pd.DataFrame, on_column: str, to_column: str) -> 
 def get_parser() -> argparse.ArgumentParser:
     '''Setup a command line parser'''
     parser = argparse.ArgumentParser(
-        description='''This app will anonymize personal information
-        in user specified columns in an excel table. The personal
-        information is hashed and can be repeated on other excel files
-        producing the same hashed value for the same input.
+        description='''This app will calculate paired T-test statistics
+        on a set of surveys. Personal information is anonymized.
         '''
     )
     parser.add_argument(
