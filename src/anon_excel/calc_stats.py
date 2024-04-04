@@ -69,6 +69,7 @@ def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str
     col_set_after = set(df_after.columns)
     common_cols = col_set_before.intersection(col_set_after)
     questions = list(qset.intersection(common_cols))
+    # make sure the questions are in the same order for before and after
     df_before = df_before[[id_column, *questions]]
     df_after = df_after[[id_column, *questions]]
 
@@ -79,11 +80,31 @@ def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str
     df_bf = df_before[df_before[id_column].isin(stud_common)]
     df_af = df_after[df_after[id_column].isin(stud_common)]
 
+    # combine into single dataset with only
+    # overlapping students and questions in Pre and Post survey results
     quests_before = [f'before_{n:02}' for n in range(1, len(questions)+1)]
     quests_after = [f'after_{n:02}' for n in range(1, len(questions)+1)]
     df_bf.columns = [id_column, *quests_before]
     df_af.columns = [id_column, *quests_after]
     df_combined = df_bf.merge(df_af, on=id_column)
+    combined_cols = [id_column, *[q for tup in zip(
+        quests_before, quests_after) for q in tup]]
+    df_combined = df_combined[combined_cols]
 
-    df_combined.to_excel('data/combined.xlsx', index=False)
-    # for q in questions:
+    # Apply Ttest for each question
+    pairs = []
+    for bef, aft, question in zip(quests_before, quests_after, questions):
+        df_q = df_combined[[id_column, bef, aft]]
+        res = stats.ttest_rel(df_q[bef].values, df_q[aft].values)
+        pairs.append(
+            {'question': question, 'statistic': res.statistic, 'pvalue': res.pvalue})
+
+    df_pairs = pd.DataFrame(pairs)
+    question_legend = [questions, quests_before, quests_after]
+    df_legend = pd.DataFrame(question_legend).T
+    df_legend.columns = ['Question', 'Before_question_ID', 'After_question_ID']
+
+    with pd.ExcelWriter('data/analysis.xlsx') as writer:
+        df_pairs.to_excel(writer, sheet_name='Paired Ttest', index=False)
+        df_combined.to_excel(writer, sheet_name='Rankings', index=False)
+        df_legend.to_excel(writer, sheet_name='Question legend', index=False)
