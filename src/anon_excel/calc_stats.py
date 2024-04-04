@@ -1,10 +1,11 @@
+import logging
 import pandas as pd
 from scipy import stats
 
 POSITIV_RANK = {'Strongly agree (SA)': 4, 'Agree (A)': 3, 'Neutral (N)': 2,
-                'Disagree (D)': 1, 'Strongly Disagree (SD)': 0, '': -1}
+                'Disagree (D)': 1, 'Strongly Disagree (SD)': 0, '': 0}
 NEGATIV_RANK = {'Strongly agree (SA)': 0, 'Agree (A)': 1, 'Neutral (N)': 2,
-                'Disagree (D)': 3, 'Strongly Disagree (SD)': 4, '': -1}
+                'Disagree (D)': 3, 'Strongly Disagree (SD)': 4, '': 0}
 RANK_LOOKUP = \
     {'I feel that students in this course care about each other': POSITIV_RANK,
      'I feel that I am encouraged to ask questions': POSITIV_RANK,
@@ -28,6 +29,11 @@ RANK_LOOKUP = \
      'I feel that this course does not promote a desire to learn': NEGATIV_RANK,
      }
 
+log = logging.getLogger(__name__)
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+log.addHandler(ch)
+
 
 def calc_question_mean(df: pd.DataFrame) -> pd.DataFrame:
     qset = set(RANK_LOOKUP.keys())
@@ -42,6 +48,7 @@ def calc_question_mean(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def category_to_rank(df: pd.DataFrame) -> pd.DataFrame:
+    log.info('Transform categories to numerical values')
     for question, ranks in RANK_LOOKUP.items():
         if question in list(df.columns):
             df[question] = df[question].replace(r'\s+', ' ', regex=True)
@@ -50,15 +57,7 @@ def category_to_rank(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def paired_ttest_on_question(before: pd.Series, after: pd.Series) -> tuple[float, float]:
-    '''Calculate paired t-test
-       return stat-value and p-value
-    '''
-    res = stats.ttest_rel(before, after)
-    return res['statistic'], res['pvalue']
-
-
-def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str):
+def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     # first make sure the dataframe are ordered by the same column (student_anon)
     df_before.sort_values(by=[id_column])
     df_after.sort_values(by=[id_column])
@@ -104,7 +103,4 @@ def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str
     df_legend = pd.DataFrame(question_legend).T
     df_legend.columns = ['Question', 'Before_question_ID', 'After_question_ID']
 
-    with pd.ExcelWriter('data/analysis.xlsx') as writer:
-        df_pairs.to_excel(writer, sheet_name='Paired Ttest', index=False)
-        df_combined.to_excel(writer, sheet_name='Rankings', index=False)
-        df_legend.to_excel(writer, sheet_name='Question legend', index=False)
+    return df_pairs, df_combined, df_legend
