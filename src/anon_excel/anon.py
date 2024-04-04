@@ -1,12 +1,14 @@
 import argparse
 from glob import glob
-# import logging
+import logging
 from hashlib import blake2b
 import os
 from pathlib import Path
 import sys
 import pandas as pd
 from anon_excel.calc_stats import category_to_rank, calc_question_mean, paired_ttest
+
+ANALYSIS_OUTPUT = 'analysis.xlsx'
 
 
 def transform_to_anonymous(df: pd.DataFrame, on_column: str, to_column: str) -> pd.DataFrame:
@@ -67,56 +69,87 @@ def read_and_clean(excel_name: Path, column: str) -> pd.DataFrame:
     return df
 
 
+def find_survey_file(folder: str, which: str) -> str:
+    files = glob(str(folder) + f'/{which}*.xlsx')
+    if len(files) == 0:
+        print(f'No {which}-survey excel files found')
+        return ''
+    elif len(files) > 1:
+        print(f'Multiple {which}-survey excel files found')
+        return ''
+
+    return files[0]
+
+
+def load_and_prepare_survey_data(survey_file: str, namecol: str) -> pd.DataFrame:
+    df = read_and_clean(Path(survey_file), namecol)
+    df = transform_to_anonymous(
+        df, on_column=namecol, to_column='student_anon')
+    df_ranked = category_to_rank(df)
+
+    return df_ranked
+
+
+logging.basicConfig(
+    filename='anon_excel.log',
+    filemode='w',
+    format='%(asctime)s %(levelname)-8s %(message)s',
+    level=logging.INFO,
+    datefmt='%Y-%m-%d %H:%M:%S')
+log = logging.getLogger(__name__)
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+log.addHandler(ch)
+
+
 def main():
     args = get_parser().parse_args()
 
     folder = Path(args.folder)
     if not folder.exists:
-        print('Folder {args.folder} does not exist')
+        log.error('Folder {args.folder} does not exist')
         sys.exit(1)
 
     col = ['Your student number']
     if args.column:
         col = args.col
 
-    # logging.basicConfig(
-    #     filename=folder / 'anon_excel.log',
-    #     filemode='w',
-    #     format='%(asctime)s %(levelname)-8s %(message)s',
-    #     level=logging.INFO,
-    #     datefmt='%Y-%m-%d %H:%M:%S')
-    # log = logging.getLogger(__name__)
+    prev_result = folder / ANALYSIS_OUTPUT
+    if prev_result.exists():
+        if args.overwrite:
+            os.remove(prev_result)
+        else:
+            log.error(f'Output analysis {prev_result} already exists.'
+                      ' Use --overwrite to force recalculation')
+            sys.exit()
 
-    if args.overwrite:
-        prev_result = glob(str(folder) + '/P*anon.xlsx')
-        for fn in prev_result:
-            os.remove(fn)
+    pre_file = find_survey_file(folder, which='Pre')
+    post_file = find_survey_file(folder, which='Post')
+    if not (pre_file or post_file):
+        log.error('No survey files found, quitting')
+        sys.exit()
 
-    files = glob(str(folder) + '/P*.xlsx')
-    if len(files) == 0:
-        print('No excel files found')
+    if pre_file:
+        log.info(f'Pre-survey data found: "{pre_file}"')
+        df_pre = load_and_prepare_survey_data(pre_file, col[0])
+        # df_pre_mean = calc_question_mean(df_pre)
+    if post_file:
+        log.info(f'Post-survey data found: "{post_file}"')
+        df_post = load_and_prepare_survey_data(post_file, col[0])
+        # df_post_mean = calc_question_mean(df_post)
 
-    dfs = []
-    for dex in files:
-        name = Path(dex)
-        outname = name.with_stem(name.stem + '_anon')
-        if outname.exists():
-            continue
-
-        df = read_and_clean(name, col[0])
-        df = transform_to_anonymous(
-            df, on_column=col[0], to_column='student_anon')
-        df = category_to_rank(df)
-        dfs.append(df)
-
-        # task 1: add ranking averages, both to questions (columns)
-        #         as well as studentID (rows)
-        df_mean = calc_question_mean(df)
-        df_mean.to_excel(outname, index=False)
-
-    # task 2: calculate paired t-test for each question common in
-    #         before and after with student as independent var
-    paired_ttest(dfs[0], dfs[1], 'student_anon')
+    if pre_file and post_file:
+        log.info('Calculating paired Ttest from Pre- and Post survey')
+        # task: calculate paired t-test for each question common in
+        #       pre survey and post survay with student as independent var
+        df_pairs, df_combined, df_legend = paired_ttest(
+            df_pre, df_post, id_column='student_anon')
+        log.info(f'Writing analysis result to "{folder / ANALYSIS_OUTPUT}"')
+        with pd.ExcelWriter(folder / ANALYSIS_OUTPUT) as writer:
+            df_pairs.to_excel(writer, sheet_name='Paired Ttest', index=False)
+            df_combined.to_excel(writer, sheet_name='Rankings', index=False)
+            df_legend.to_excel(
+                writer, sheet_name='Question legend', index=False)
 
 
 if __name__ == '__main__':
