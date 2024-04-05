@@ -9,11 +9,21 @@ pip install anon_excel-1.0.0-py3-none-any.whl
 This will also install all dependencies (pandas and scipi).
 
 ## Usage
-Syntax:
+
 ```
-anonex 
+usage: anonex [-h] [-c COLUMN [COLUMN ...]] [-o] [-r] folder
+
+This app will calculate paired T-test statistics on a set of surveys. Personal information is anonymized.
+
+positional arguments:
+  folder                Specify the folder with the excel report(s)
+
+options:
+  -h, --help            show this help message and exit
+  -c COLUMN [COLUMN ...], --column COLUMN [COLUMN ...]
+                        Specify the columns (by name) to make anonymous
+  -o, --overwrite       Overwrite existing excel outputs
 ```
-Start a console
 
 ## The surveys
 Inputs are two surveys with common questions and students. The surveys are
