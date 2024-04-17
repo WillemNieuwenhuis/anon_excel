@@ -60,8 +60,8 @@ def category_to_rank(df: pd.DataFrame) -> pd.DataFrame:
 def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str) -> \
         tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     # first make sure the dataframe are ordered by the same column (student_anon)
-    df_before.sort_values(by=[id_column])
-    df_after.sort_values(by=[id_column])
+    df_before = df_before.sort_values(by=[id_column])
+    df_after = df_after.sort_values(by=[id_column])
 
     # select common questions
     qset = set(RANK_LOOKUP.keys())
@@ -99,9 +99,26 @@ def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str
         pairs.append(
             {'question': question, 'statistic': res.statistic, 'pvalue': res.pvalue})
 
+    # apply Ttest for each student
+    stud_pairs = []
+    for stud in stud_common:
+        before = df_bf[df_bf[id_column] ==
+                       stud][quests_before[1:]].values[0]
+        after = df_af[df_af[id_column] ==
+                      stud][quests_after[1:]].values[0]
+        res = stats.ttest_rel(before, after)
+        stud_pairs.append(
+            {id_column: stud, 'statistic': res.statistic, 'pvalue': res.pvalue})
+
+    # turn results into dataframes
     df_pairs = pd.DataFrame(pairs)
+    df_stud_pairs = pd.DataFrame(stud_pairs)
     question_legend = [questions, quests_before, quests_after]
     df_legend = pd.DataFrame(question_legend).T
     df_legend.columns = ['Question', 'Before_question_ID', 'After_question_ID']
 
-    return df_pairs, df_combined, df_legend, df_bf, df_af
+    # for nices output: order by student ID or question
+    df_pairs = df_pairs.sort_values(by=['question'])
+    df_stud_pairs = df_stud_pairs.sort_values(by=[id_column])
+
+    return df_pairs, df_combined, df_legend, df_bf, df_af, df_stud_pairs

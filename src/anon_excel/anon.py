@@ -140,11 +140,13 @@ def main():
         log.info('Calculating paired Ttest from Pre- and Post survey')
         # task: calculate paired t-test for each question common in
         #       pre survey and post survay with student as independent var
-        df_pairs, df_combined, df_legend, df_bf, df_af = paired_ttest(
+        df_pairs, df_combined, df_legend, df_bf, df_af, df_stud_pairs = paired_ttest(
             df_pre, df_post, id_column='student_anon')
         log.info(f'Writing analysis result to "{folder / ANALYSIS_OUTPUT}"')
         with pd.ExcelWriter(folder / ANALYSIS_OUTPUT) as writer:
             df_pairs.to_excel(writer, sheet_name='Paired Ttest', index=False)
+            df_stud_pairs.to_excel(
+                writer, sheet_name='Students Ttest', index=False)
             df_combined.to_excel(writer, sheet_name='Rankings', index=False)
             df_bf.to_excel(writer, sheet_name='Pre-questions', index=False)
             df_af.to_excel(writer, sheet_name='Post-questions', index=False)
