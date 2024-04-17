@@ -6,14 +6,15 @@ The app is a python application and can be installed with pip:
 ```shell
 pip install anon_excel-1.0.0-py3-none-any.whl
 ```
-This will also install all dependencies (pandas and scipi).
+This will also install all dependencies (pandas and scipy).
 
 ## Usage
 
 ```
-usage: anonex [-h] [-c COLUMN [COLUMN ...]] [-o] [-r] folder
+usage: anonex [-h] [-c COLUMN [COLUMN ...]] [-o] folder
 
-This app will calculate paired T-test statistics on a set of surveys. Personal information is anonymized.
+This app will calculate paired T-test statistics on sets of surveys. Personal information
+is anonymized.
 
 positional arguments:
   folder                Specify the folder with the excel report(s)
@@ -26,10 +27,21 @@ options:
 ```
 
 ## The surveys
-Inputs are two surveys with common questions and students. The surveys are
-in Excel format. The first survey (filename is assumed to start with "Pre") contains
-the survey result before lecture/workshop/course. The second survey (filename is assumed
-to start with "Post") contains surveys results obtained after the lecture/workshop/course.
+Inputs are surveys with common questions and students. The surveys are
+in Excel format. Surveys come in a pre-course survey and a post-course survey. The
+pre-course survey contains the survey result before lecture/workshop/course.
+The post-course survey contains survey results obtained after the
+lecture/workshop/course.
+
+Multiple sets of pre- and post-course surveys are allowed.
+The filenames of pre- and post-course surveys are the same, but the
+pre-course survey starts with `Pre`, while the post-course surveys starts
+with `Post`. For example:
+
+```
+Pre-Course Survey_ Perceived Sense of Community in Blended Learning(1-5).xlsx
+Post-Course Survey_ Perceived Sense of Community in Blended Learning(1-5).xlsx
+```
 
 Properties of the surveys:
 - Both contain student ID's and thus can identify individuals
