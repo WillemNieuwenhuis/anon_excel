@@ -6,20 +6,21 @@ import os
 from pathlib import Path
 import sys
 import pandas as pd
-from anon_excel.calc_stats import category_to_rank, calc_question_mean, paired_ttest
+from anon_excel.calc_stats import category_to_rank, paired_ttest
 
-ANALYSIS_OUTPUT = 'analysis.xlsx'
+ANALYSIS_OUTPUT_BASE = 'analysis'
 ANONYMOUS_ID = 'student_anon'
 # name of ID column in the surveys:
 DEFAULT_STUDENT_COLUMN = 'Your student number'
 
 
-def transform_to_anonymous(df: pd.DataFrame, on_column: str, to_column: str) -> pd.DataFrame:
+def transform_to_anonymous(df: pd.DataFrame,
+                           on_column: str, to_column: str) -> pd.DataFrame:
     '''find student number column and anonymize, using
        the blake2b stable hash function
        return unchanged if column is not in dataframe
     '''
-    if not on_column in df.columns:
+    if on_column not in df.columns:
         return df
 
     series = df[on_column]
@@ -53,11 +54,6 @@ def get_parser() -> argparse.ArgumentParser:
         action='store_true',
         required=False,
         help='Overwrite existing excel outputs')
-    parser.add_argument(
-        '-r', '--remove',
-        action='store_true',
-        required=False,
-        help='Do not copy personal data to output')
 
     return parser
 
@@ -80,7 +76,7 @@ def find_survey_files(folder: Path) -> list[tuple[Path, Path]]:
     stem_post = 'Post'
     files = glob(str(folder) + f'/{stem_pre}*.xlsx')
     if len(files) == 0:
-        print(f'No survey excel files found')
+        print('No survey excel files found')
         return []
 
     files = [Path(f) for f in files]
@@ -114,6 +110,13 @@ ch.setLevel(logging.INFO)
 log.addHandler(ch)
 
 
+def remove_previous_results(files: list[Path]) -> None:
+    prev = [Path(p).name for p in files]
+    log.error(f'Removing previous analysis results: \n{prev}')
+    for f in files:
+        os.remove(f)
+
+
 def main():
     args = get_parser().parse_args()
 
@@ -126,14 +129,15 @@ def main():
     if args.column:
         id_column = args.col[0]
 
-    prev_result = folder / ANALYSIS_OUTPUT
-    if prev_result.exists():
-        if args.overwrite:
-            os.remove(prev_result)
-        else:
-            log.error(f'Output analysis {prev_result} already exists.'
-                      ' Use --overwrite to force recalculation')
-            sys.exit()
+    prev = glob(str(folder) + f'/{ANALYSIS_OUTPUT_BASE}*.xlsx')
+    if args.overwrite:
+        if prev:
+            remove_previous_results(prev)
+    else:
+        prev = [Path(p).name for p in prev]
+        log.error(f'Output analysis {prev} already exists.\n'
+                  'Use --overwrite to force removal and recalculation')
+        sys.exit()
 
     surveys = find_survey_files(folder)
     if not surveys:
@@ -151,8 +155,10 @@ def main():
         #       pre survey and post survay with student as independent var
         df_pairs, df_combined, df_legend, df_bf, df_af, df_stud_pairs = paired_ttest(
             df_pre, df_post, id_column=ANONYMOUS_ID)
-        log.info(f'Writing analysis result to "{folder / ANALYSIS_OUTPUT}"')
-        with pd.ExcelWriter(folder / ANALYSIS_OUTPUT) as writer:
+
+        excel_output = folder / Path(ANALYSIS_OUTPUT_BASE + '_' + pre_file.name[4:])
+        log.info(f'Writing analysis result to "{excel_output}"')
+        with pd.ExcelWriter(excel_output) as writer:
             df_pairs.to_excel(writer, sheet_name='Paired Ttest', index=False)
             df_stud_pairs.to_excel(
                 writer, sheet_name='Students Ttest', index=False)
