@@ -9,6 +9,9 @@ import pandas as pd
 from anon_excel.calc_stats import category_to_rank, calc_question_mean, paired_ttest
 
 ANALYSIS_OUTPUT = 'analysis.xlsx'
+ANONYMOUS_ID = 'student_anon'
+# name of ID column in the surveys:
+DEFAULT_STUDENT_COLUMN = 'Your student number'
 
 
 def transform_to_anonymous(df: pd.DataFrame, on_column: str, to_column: str) -> pd.DataFrame:
@@ -67,22 +70,33 @@ def read_and_clean(excel_name: Path, column: str) -> pd.DataFrame:
     return df
 
 
-def find_survey_file(folder: str, which: str) -> str:
-    files = glob(str(folder) + f'/{which}*.xlsx')
+def find_survey_files(folder: Path) -> list[tuple[Path, Path]]:
+    '''Find one or more sets of pre- and post survey excel files.
+       Assume the pre-survey excel files start with 'Pre' and the
+       post-survey excel files start with 'Post' with the remaining stems are equal.
+       return only those sets containing both a pre and a post survey file.
+    '''
+    stem_pre = 'Pre'
+    stem_post = 'Post'
+    files = glob(str(folder) + f'/{stem_pre}*.xlsx')
     if len(files) == 0:
-        print(f'No {which}-survey excel files found')
-        return ''
-    elif len(files) > 1:
-        print(f'Multiple {which}-survey excel files found')
-        return ''
+        print(f'No survey excel files found')
+        return []
 
-    return files[0]
+    files = [Path(f) for f in files]
+    surveys = []
+    for pre in files:
+        post_file = pre.with_stem(stem_post + pre.stem[len(stem_pre):])
+        if post_file.exists():
+            surveys.append((pre, post_file))
+
+    return surveys
 
 
 def load_and_prepare_survey_data(survey_file: str, namecol: str) -> pd.DataFrame:
     df = read_and_clean(Path(survey_file), namecol)
     df = transform_to_anonymous(
-        df, on_column=namecol, to_column='student_anon')
+        df, on_column=namecol, to_column=ANONYMOUS_ID)
     df_ranked = category_to_rank(df)
 
     return df_ranked
@@ -108,9 +122,9 @@ def main():
         log.error('Folder {args.folder} does not exist')
         sys.exit(1)
 
-    col = ['Your student number']
+    id_column = DEFAULT_STUDENT_COLUMN
     if args.column:
-        col = args.col
+        id_column = args.col[0]
 
     prev_result = folder / ANALYSIS_OUTPUT
     if prev_result.exists():
@@ -121,27 +135,22 @@ def main():
                       ' Use --overwrite to force recalculation')
             sys.exit()
 
-    pre_file = find_survey_file(folder, which='Pre')
-    post_file = find_survey_file(folder, which='Post')
-    if not (pre_file or post_file):
+    surveys = find_survey_files(folder)
+    if not surveys:
         log.error('No survey files found, quitting')
         sys.exit()
 
-    if pre_file:
-        log.info(f'Pre-survey data found: "{pre_file}"')
-        df_pre = load_and_prepare_survey_data(pre_file, col[0])
-        # df_pre_mean = calc_question_mean(df_pre)
-    if post_file:
-        log.info(f'Post-survey data found: "{post_file}"')
-        df_post = load_and_prepare_survey_data(post_file, col[0])
-        # df_post_mean = calc_question_mean(df_post)
-
-    if pre_file and post_file:
+    for pre_file, post_file in surveys:
         log.info('Calculating paired Ttest from Pre- and Post survey')
+        log.info(f'Pre-survey file: "{pre_file}"')
+        df_pre = load_and_prepare_survey_data(pre_file, id_column)
+        log.info(f'Post-survey file: "{post_file}"')
+        df_post = load_and_prepare_survey_data(post_file, id_column)
+
         # task: calculate paired t-test for each question common in
         #       pre survey and post survay with student as independent var
         df_pairs, df_combined, df_legend, df_bf, df_af, df_stud_pairs = paired_ttest(
-            df_pre, df_post, id_column='student_anon')
+            df_pre, df_post, id_column=ANONYMOUS_ID)
         log.info(f'Writing analysis result to "{folder / ANALYSIS_OUTPUT}"')
         with pd.ExcelWriter(folder / ANALYSIS_OUTPUT) as writer:
             df_pairs.to_excel(writer, sheet_name='Paired Ttest', index=False)
