@@ -1,6 +1,5 @@
 from pathlib import Path
 import mock
-import pytest
 
 from anon_excel.anon import find_survey_files
 
