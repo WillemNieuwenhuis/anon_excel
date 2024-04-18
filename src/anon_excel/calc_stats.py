@@ -37,12 +37,13 @@ log.addHandler(ch)
 
 def category_to_rank(df: pd.DataFrame) -> pd.DataFrame:
     log.info('Transform categories to numerical values')
+    df_rank = df.copy()
     for question, ranks in RANK_LOOKUP.items():
-        if question in list(df.columns):
-            df[question] = df[question].replace(r'\s+', ' ', regex=True)
-            df[question] = df[question].map(ranks)
+        if question in list(df_rank.columns):
+            df_rank[question] = df_rank[question].replace(r'\s+', ' ', regex=True)
+            df_rank[question] = df_rank[question].map(ranks)
 
-    return df
+    return df_rank
 
 
 def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str) -> \
