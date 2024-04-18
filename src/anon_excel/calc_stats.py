@@ -35,18 +35,6 @@ ch.setLevel(logging.INFO)
 log.addHandler(ch)
 
 
-def calc_question_mean(df: pd.DataFrame) -> pd.DataFrame:
-    qset = set(RANK_LOOKUP.keys())
-    col_set = set(df.columns)
-    select = list(qset.intersection(col_set))
-    for col in select:
-        df = df.astype({col: 'float64'})
-
-    df['mean'] = df[select].mean(axis=1)            # add row averages
-    df.loc['averages', select] = df[select].mean()  # add col averages
-    return df
-
-
 def category_to_rank(df: pd.DataFrame) -> pd.DataFrame:
     log.info('Transform categories to numerical values')
     for question, ranks in RANK_LOOKUP.items():
