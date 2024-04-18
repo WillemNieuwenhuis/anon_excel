@@ -47,7 +47,8 @@ def category_to_rank(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str) -> \
-        tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame,
+              pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     # first make sure the dataframe are ordered by the same column (student_anon)
     df_before = df_before.sort_values(by=[id_column])
     df_after = df_after.sort_values(by=[id_column])
