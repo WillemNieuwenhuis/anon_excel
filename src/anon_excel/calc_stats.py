@@ -36,14 +36,41 @@ log.addHandler(ch)
 
 
 def category_to_rank(df: pd.DataFrame) -> pd.DataFrame:
+    ''' Transform answer categories to numerical rankings
+    '''
     log.info('Transform categories to numerical values')
     df_rank = df.copy()
     for question, ranks in RANK_LOOKUP.items():
         if question in list(df_rank.columns):
+            # strip whitespace
             df_rank[question] = df_rank[question].replace(r'\s+', ' ', regex=True)
             df_rank[question] = df_rank[question].map(ranks)
 
     return df_rank
+
+
+def determine_common_questions(df_bf: pd.DataFrame, df_af: pd.DataFrame) -> list:
+    '''
+        Find questions available in both dataframes
+    '''
+    qset = set(RANK_LOOKUP.keys())
+    col_set_before = set(df_bf.columns)
+    col_set_after = set(df_af.columns)
+    common_cols = col_set_before.intersection(col_set_after)
+    questions = list(qset.intersection(common_cols))
+    return questions
+
+
+def determine_common_students(df_before: pd.DataFrame, df_after: pd.DataFrame,
+                              id_column: str) -> list:
+    '''
+        Find students common to both dateframes
+    '''
+    stud_before = set(df_before[id_column].values)
+    stud_after = set(df_after[id_column].values)
+    stud_common = stud_before.intersection(stud_after)
+
+    return stud_common
 
 
 def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str) -> \
@@ -53,27 +80,23 @@ def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str
     df_before = df_before.sort_values(by=[id_column])
     df_after = df_after.sort_values(by=[id_column])
 
-    # select common questions
-    qset = set(RANK_LOOKUP.keys())
-    col_set_before = set(df_before.columns)
-    col_set_after = set(df_after.columns)
-    common_cols = col_set_before.intersection(col_set_after)
-    questions = list(qset.intersection(common_cols))
-    # make sure the questions are in the same order for before and after
+    questions = determine_common_questions(df_before, df_after)
+    stud_common = determine_common_students(df_before, df_after, id_column)
+
+    # Extract data from both dataframes for common questions only
     df_before = df_before[[id_column, *questions]]
     df_after = df_after[[id_column, *questions]]
 
-    # select common students
-    stud_before = set(df_before[id_column].values)
-    stud_after = set(df_after[id_column].values)
-    stud_common = stud_before.intersection(stud_after)
+    # Extract data only for common students
     df_bf = df_before[df_before[id_column].isin(stud_common)]
     df_af = df_after[df_after[id_column].isin(stud_common)]
 
-    # combine into single dataset with only
-    # overlapping students and questions in Pre and Post survey results
+    # create shorthands for the questions
     quests_before = [f'before_{n:02}' for n in range(1, len(questions)+1)]
     quests_after = [f'after_{n:02}' for n in range(1, len(questions)+1)]
+
+    # combine into single dataset with only
+    # overlapping students and questions in Pre and Post survey results
     df_bf.columns = [id_column, *quests_before]
     df_af.columns = [id_column, *quests_after]
     df_combined = df_bf.merge(df_af, on=id_column)
@@ -92,10 +115,8 @@ def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str
     # apply Ttest for each student
     stud_pairs = []
     for stud in stud_common:
-        before = df_bf[df_bf[id_column] ==
-                       stud][quests_before[1:]].values[0]
-        after = df_af[df_af[id_column] ==
-                      stud][quests_after[1:]].values[0]
+        before = df_bf[df_bf[id_column] == stud][quests_before[1:]].values[0]
+        after = df_af[df_af[id_column] == stud][quests_after[1:]].values[0]
         res = stats.ttest_rel(before, after)
         stud_pairs.append(
             {id_column: stud, 'statistic': res.statistic, 'pvalue': res.pvalue})
