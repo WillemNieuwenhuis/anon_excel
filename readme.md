@@ -51,15 +51,26 @@ Properties of the surveys:
     (Strongly agree (SA), Agree (A), Neutral (N),
     Disagree (D), Strongly Disagree (SD)
 
+### Ranking table
+An additional input is the translation table to link the categorical
+survey values to numerical values. For example:
+
+```
+Scoring.xlsx
+```
+
 ## Requirements
 The application will generate multiple outputs:
-- Paired T-test results
-- A table with rankings per question for all students
-- A legend connecting the shortened question names with the original question
+- Paired T-test results, for both dimensions: questions and students
+- Table with numerical rankings per question for all students: one with
+   pre- and post survey questions combined, one table with the pre-survey
+   questions and one with the post-survey questions. Only questions
+   common to pre- and post- survey are included
+- A legend connecting the shorthand question names with the original question
 
 ### Approach
-1. Find both surveys, if not found stop.
-1. Clean the data if needed
+1. Find sets of surveys, if none found stop.
+1. Clean the survey data
 1. Hash the student data to remove possibility of identification
 1. Recode the categorical ranking into numerical values 
 1. Extract only the common questions from both surveys
@@ -73,5 +84,5 @@ called "blake2b". This is a stable hashing function to guarantuee that the
 hashcode will be the same for the same student each time, as well as unique.
 
 The hashed code will be visible in the analysis result; all other identifyable 
-data is removed.
+data is absent from the analysis results.
 
