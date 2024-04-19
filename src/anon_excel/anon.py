@@ -145,7 +145,7 @@ def main():
         sys.exit()
 
     for pre_file, post_file in surveys:
-        log.info('Calculating paired Ttest from Pre- and Post survey')
+        log.info('Initiating analysis')
         log.info(f'Pre-survey file: "{pre_file}"')
         df_pre = load_and_prepare_survey_data(pre_file, id_column)
         log.info(f'Post-survey file: "{post_file}"')
@@ -153,6 +153,7 @@ def main():
 
         # task: calculate paired t-test for each question common in
         #       pre survey and post survay with student as independent var
+        log.info('Calculating paired Ttest from Pre- and Post survey')
         df_pairs, df_combined, df_legend, df_bf, df_af, df_stud_pairs = paired_ttest(
             df_pre, df_post, id_column=ANONYMOUS_ID)
 
