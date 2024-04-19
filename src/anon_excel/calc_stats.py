@@ -24,25 +24,24 @@ def category_to_rank(df: pd.DataFrame) -> pd.DataFrame:
     return df_rank
 
 
-def determine_common_questions(df_bf: pd.DataFrame, df_af: pd.DataFrame) -> list:
+def determine_common_questions(bf_quest: list, af_quest: list) -> list:
     '''
-        Find questions available in both dataframes
+        Find questions available in both surveys
     '''
     qset = set(rank_lookup.keys())
-    col_set_before = set(df_bf.columns)
-    col_set_after = set(df_af.columns)
+    col_set_before = set(bf_quest)
+    col_set_after = set(af_quest)
     common_cols = col_set_before.intersection(col_set_after)
     questions = list(qset.intersection(common_cols))
     return questions
 
 
-def determine_common_students(df_before: pd.DataFrame, df_after: pd.DataFrame,
-                              id_column: str) -> list:
+def determine_common_students(bf_studs: list, af_studs: list) -> list:
     '''
-        Find students common to both dateframes
+        Find students common to both surveys
     '''
-    stud_before = set(df_before[id_column].values)
-    stud_after = set(df_after[id_column].values)
+    stud_before = set(bf_studs)
+    stud_after = set(af_studs)
     stud_common = stud_before.intersection(stud_after)
 
     return stud_common
@@ -55,8 +54,9 @@ def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str
     df_before = df_before.sort_values(by=[id_column])
     df_after = df_after.sort_values(by=[id_column])
 
-    questions = determine_common_questions(df_before, df_after)
-    stud_common = determine_common_students(df_before, df_after, id_column)
+    questions = determine_common_questions(df_before.columns, df_after.columns)
+    stud_common = determine_common_students(
+        df_before[id_column].values, df_after[id_column].values)
 
     # Extract data from both dataframes for common questions only
     df_before = df_before[[id_column, *questions]]
