@@ -1,33 +1,8 @@
 import logging
 import pandas as pd
 from scipy import stats
+from anon_excel.ranking_data import rank_lookup
 
-POSITIV_RANK = {'Strongly agree (SA)': 4, 'Agree (A)': 3, 'Neutral (N)': 2,
-                'Disagree (D)': 1, 'Strongly Disagree (SD)': 0, '': 0}
-NEGATIV_RANK = {'Strongly agree (SA)': 0, 'Agree (A)': 1, 'Neutral (N)': 2,
-                'Disagree (D)': 3, 'Strongly Disagree (SD)': 4, '': 0}
-RANK_LOOKUP = \
-    {'I feel that students in this course care about each other': POSITIV_RANK,
-     'I feel that I am encouraged to ask questions': POSITIV_RANK,
-     'I feel connected to others in this course': POSITIV_RANK,
-     'I feel that it is hard to get help when I have a question': NEGATIV_RANK,
-     'I do not feel a spirit of community': NEGATIV_RANK,
-     'I feel that I receive timely feedback': POSITIV_RANK,
-     'I feel that this course is like a family': POSITIV_RANK,
-     'I feel uneasy exposing gaps in my understanding': NEGATIV_RANK,
-     'I feel isolated in this course': NEGATIV_RANK,
-     'I feel reluctant to speak openly': NEGATIV_RANK,
-     'I trust others in this course': POSITIV_RANK,
-     'I feel that this course results in only modest learning': NEGATIV_RANK,
-     'I feel that I can rely on others in this course': POSITIV_RANK,
-     'I feel that other students do not help me learn': NEGATIV_RANK,
-     'I feel that members of this course depend on me': POSITIV_RANK,
-     'I feel that I am given ample opportunities to learn': POSITIV_RANK,
-     'I feel uncertain about others in this course': NEGATIV_RANK,
-     'I feel that my educational needs are not being met': NEGATIV_RANK,
-     'I feel confident that others will support me': POSITIV_RANK,
-     'I feel that this course does not promote a desire to learn': NEGATIV_RANK,
-     }
 
 log = logging.getLogger(__name__)
 ch = logging.StreamHandler()
@@ -40,7 +15,7 @@ def category_to_rank(df: pd.DataFrame) -> pd.DataFrame:
     '''
     log.info('Transform categories to numerical values')
     df_rank = df.copy()
-    for question, ranks in RANK_LOOKUP.items():
+    for question, ranks in rank_lookup.items():
         if question in list(df_rank.columns):
             # strip whitespace
             df_rank[question] = df_rank[question].replace(r'\s+', ' ', regex=True)
@@ -53,7 +28,7 @@ def determine_common_questions(df_bf: pd.DataFrame, df_af: pd.DataFrame) -> list
     '''
         Find questions available in both dataframes
     '''
-    qset = set(RANK_LOOKUP.keys())
+    qset = set(rank_lookup.keys())
     col_set_before = set(df_bf.columns)
     col_set_after = set(df_af.columns)
     common_cols = col_set_before.intersection(col_set_after)
@@ -96,7 +71,7 @@ def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str
     quests_after = [f'after_{n:02}' for n in range(1, len(questions)+1)]
 
     # combine into single dataset with only
-    # overlapping students and questions in Pre and Post survey results
+    # overlapping students and questions from Pre and Post survey results
     df_bf.columns = [id_column, *quests_before]
     df_af.columns = [id_column, *quests_after]
     df_combined = df_bf.merge(df_af, on=id_column)
