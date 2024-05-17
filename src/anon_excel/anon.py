@@ -61,6 +61,9 @@ def get_parser() -> argparse.ArgumentParser:
 
 
 def read_and_clean(excel_name: Path, column: str) -> pd.DataFrame:
+    '''Read the excel data, remove all records that have invalid
+       data in the `column` field (usually the user ID), and change
+       the type from Object to string'''
     df = pd.read_excel(excel_name)
     df = df.dropna(axis='index', subset=[column])
     df = df.astype({column: 'string'})
@@ -98,6 +101,9 @@ def find_survey_files(folder: Path, allow_missing_post: bool = False) -> list[tu
 
 
 def load_and_prepare_survey_data(survey_file: str, namecol: str) -> pd.DataFrame:
+    '''Read survey file, remove invalid data, transcode the personal ID's
+       (in the `namecol` field) into anonymized values, and translate the
+       answer code into numerical rankings, according to the `scoring.xlsx` data'''
     df = read_and_clean(Path(survey_file), namecol)
     df = transform_to_anonymous(
         df, on_column=namecol, to_column=ANONYMOUS_ID)
