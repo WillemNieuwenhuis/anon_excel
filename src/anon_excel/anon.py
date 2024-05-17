@@ -66,11 +66,15 @@ def read_and_clean(excel_name: Path, column: str) -> pd.DataFrame:
     return df
 
 
-def find_survey_files(folder: Path) -> list[tuple[Path, Path]]:
+def find_survey_files(folder: Path, allow_missing_post: bool = False) -> list[tuple[Path, Path]]:
     '''Find one or more sets of pre- and post survey excel files.
        Assume the pre-survey excel files start with 'Pre' and the
        post-survey excel files start with 'Post' with the remaining stems are equal.
-       return only those sets containing both a pre and a post survey file.
+       The allow_missing_post setting is used to allow existence of pre-survey file only,
+       making it possible to pre-analyse / clean the data; the pre-survey file MUST
+       be available.
+       return tuples containing both a pre and a post survey file, where the post
+       survey file can be an empty path when allow_missing_post == true.
     '''
     stem_pre = 'Pre'
     stem_post = 'Post'
@@ -85,6 +89,8 @@ def find_survey_files(folder: Path) -> list[tuple[Path, Path]]:
         post_file = pre.with_stem(stem_post + pre.stem[len(stem_pre):])
         if post_file.exists():
             surveys.append((pre, post_file))
+        elif allow_missing_post:
+            surveys.append((pre, Path('')))
 
     return surveys
 
