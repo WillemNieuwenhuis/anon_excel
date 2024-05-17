@@ -12,8 +12,13 @@ log = logging.getLogger(__name__)
 ANALYSIS_OUTPUT_BASE = 'analysis'
 CLEANED_OUTPUT_BASE = 'cleaned'
 ANONYMOUS_ID = 'student_anon'
+
 # name of ID column in the surveys:
+# Note that this column will NOT end up in the cleaned and final outputs
 DEFAULT_STUDENT_COLUMN = 'Your student number'
+# columns to drop in cleaned output
+DROP_COLUMNS = ['ID', 'Start time', 'Completion time',
+                'Email', 'Name', 'Last modified time']
 
 
 def transform_to_anonymous(df: pd.DataFrame,
@@ -173,8 +178,12 @@ def main():
         log.info('Initiating analysis')
         log.info(f'Pre-survey file: "{pre_file}"')
         df_pre = load_and_prepare_survey_data(pre_file, id_column)
-        log.info(f'Post-survey file: "{post_file}"')
-        df_post = load_and_prepare_survey_data(post_file, id_column)
+        if post_file:
+            log.info(f'Post-survey file: "{post_file}"')
+            df_post = load_and_prepare_survey_data(post_file, id_column)
+        else:
+            log.info('No accompanying post file, skipping T-test')
+            continue
 
         # task: calculate paired t-test for each question common in
         #       pre survey and post survay with student as independent var
@@ -182,7 +191,7 @@ def main():
         df_pairs, df_combined, df_legend, df_bf, df_af, df_stud_pairs = paired_ttest(
             df_pre, df_post, id_column=ANONYMOUS_ID)
 
-        excel_output = folder / Path(ANALYSIS_OUTPUT_BASE + '_' + pre_file.name[4:])
+        excel_output = folder / Path(output_base + '_' + pre_file.name[4:])
         log.info(f'Writing analysis result to "{excel_output}"')
         with pd.ExcelWriter(excel_output) as writer:
             df_pairs.to_excel(writer, sheet_name='Paired Ttest', index=False)
