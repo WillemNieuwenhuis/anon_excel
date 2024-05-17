@@ -8,6 +8,8 @@ import sys
 import pandas as pd
 from anon_excel.calc_stats import category_to_rank, paired_ttest
 
+log = logging.getLogger(__name__)
+
 ANALYSIS_OUTPUT_BASE = 'analysis'
 ANONYMOUS_ID = 'student_anon'
 # name of ID column in the surveys:
@@ -104,19 +106,7 @@ def load_and_prepare_survey_data(survey_file: str, namecol: str) -> pd.DataFrame
     return df_ranked
 
 
-logging.basicConfig(
-    filename='anon_excel.log',
-    filemode='w',
-    format='%(asctime)s %(levelname)-8s %(message)s',
-    level=logging.INFO,
-    datefmt='%Y-%m-%d %H:%M:%S')
-log = logging.getLogger(__name__)
-ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
-log.addHandler(ch)
-
-
-def remove_previous_results(files: list[Path]) -> None:
+def remove_previous_results(files: list[Path], which_output: str, do_overwrite: bool) -> bool:
     prev = [Path(p).name for p in files]
     log.error(f'Removing previous analysis results: \n{prev}')
     for f in files:
