@@ -175,7 +175,7 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python
 # project excludes
-data
+*data
 
 proto.ipynb
 .vscode/launch.json
