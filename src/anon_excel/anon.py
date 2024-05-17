@@ -204,5 +204,44 @@ def main():
                 writer, sheet_name='Question legend', index=False)
 
 
+def clean_only():
+    args = get_parser().parse_args()
+
+    folder = Path(args.folder)
+    if not folder.exists:
+        log.error('Folder {args.folder} does not exist')
+        sys.exit(1)
+
+    id_column = DEFAULT_STUDENT_COLUMN
+    if args.column:
+        id_column = args.col[0]
+
+    prev = folder.glob(f'/{CLEANED_OUTPUT_BASE}*.xlsx')
+    if args.overwrite:
+        if prev:
+            remove_previous_results(prev)
+        else:
+            prev = [Path(p).name for p in prev]
+            log.error(f'Output from cleaning {prev} already exists.\n'
+                      'Use --overwrite to force removal and recalculation')
+            sys.exit()
+
+    surveys = find_survey_files(folder)
+    if not surveys:
+        log.error('No survey files found, quitting')
+        sys.exit()
+
+    for pre_file, _ in surveys:
+        log.info('Initiating analysis')
+        log.info(f'Pre-survey file: "{pre_file}"')
+        df_pre = load_and_prepare_survey_data(pre_file, id_column)
+
+    excel_output = folder / Path(CLEANED_OUTPUT_BASE + '_' + pre_file.name[4:])
+    log.info(f'Writing analysis result to "{excel_output}"')
+    with pd.ExcelWriter(excel_output) as writer:
+        df_pre.to_excel(writer, sheet_name='Cleaned', index=False)
+
+
 if __name__ == '__main__':
-    main()
+    # main()
+    clean_only()
