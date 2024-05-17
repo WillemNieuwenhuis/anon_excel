@@ -39,8 +39,9 @@ def transform_to_anonymous(df: pd.DataFrame,
 def get_parser() -> argparse.ArgumentParser:
     '''Setup a command line parser'''
     parser = argparse.ArgumentParser(
-        description='''This app will calculate paired T-test statistics
-        on a set of surveys. Personal information is anonymized.
+        description='''This app scans multiple sets of surveys. The survey data
+         is cleaned up, and optionally a T-test analysis is performed.
+         Personal information is removed.
         '''
     )
     parser.add_argument(
@@ -51,6 +52,18 @@ def get_parser() -> argparse.ArgumentParser:
         nargs='+',
         required=False,
         help='Specify the columns (by name) to make anonymous')
+    parser.add_argument(
+        '-x', '--cleanonly',
+        action='store_true',
+        required=False,
+        default=False,
+        help='Read and clean the data, overrides -t')
+    parser.add_argument(
+        '-t', '--ttest',
+        action='store_true',
+        required=False,
+        default=True,
+        help='Perform T-test calculation')
     parser.add_argument(
         '-o', '--overwrite',
         action='store_true',
