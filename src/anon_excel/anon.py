@@ -1,5 +1,4 @@
 import argparse
-from glob import glob
 import logging
 from hashlib import blake2b
 import os
@@ -11,6 +10,7 @@ from anon_excel.calc_stats import category_to_rank, paired_ttest
 log = logging.getLogger(__name__)
 
 ANALYSIS_OUTPUT_BASE = 'analysis'
+CLEANED_OUTPUT_BASE = 'cleaned'
 ANONYMOUS_ID = 'student_anon'
 # name of ID column in the surveys:
 DEFAULT_STUDENT_COLUMN = 'Your student number'
@@ -83,7 +83,7 @@ def find_survey_files(folder: Path, allow_missing_post: bool = False) -> list[tu
     '''
     stem_pre = 'Pre'
     stem_post = 'Post'
-    files = glob(str(folder) + f'/{stem_pre}*.xlsx')
+    files = folder.glob(f'/{stem_pre}*.xlsx')
     if len(files) == 0:
         print('No survey excel files found')
         return []
@@ -112,11 +112,28 @@ def load_and_prepare_survey_data(survey_file: str, namecol: str) -> pd.DataFrame
     return df_ranked
 
 
-def remove_previous_results(files: list[Path], which_output: str, do_overwrite: bool) -> bool:
+def remove_previous_results(files: list[Path], do_overwrite: bool, which_output: str) -> bool:
     prev = [Path(p).name for p in files]
-    log.error(f'Removing previous analysis results: \n{prev}')
-    for f in files:
-        os.remove(f)
+    if do_overwrite:
+        log.info(f'Trying to remove previous {which_output} results: \n{prev}')
+        for f in files:
+            os.remove(f)
+        return True
+
+    log.error(f'Output {which_output} data already exists.\n'
+              'Use --overwrite to force removal and recalculation')
+
+    return False
+
+
+def check_remove_all_outputs(folder: Path, overwrite: bool) -> bool:
+    for check in [ANALYSIS_OUTPUT_BASE, CLEANED_OUTPUT_BASE]:
+        cur_fol = folder / check
+        prev = cur_fol.glob(f'{check}*.xlsx')
+        if not remove_previous_results(prev, check, overwrite):
+            return False
+
+    return True
 
 
 def main():
@@ -129,16 +146,9 @@ def main():
 
     id_column = DEFAULT_STUDENT_COLUMN
     if args.column:
-        id_column = args.col[0]
+        id_column = args.column[0]
 
-    prev = glob(str(folder) + f'/{ANALYSIS_OUTPUT_BASE}*.xlsx')
-    if args.overwrite:
-        if prev:
-            remove_previous_results(prev)
-    else:
-        prev = [Path(p).name for p in prev]
-        log.error(f'Output analysis {prev} already exists.\n'
-                  'Use --overwrite to force removal and recalculation')
+    if not check_remove_all_outputs(folder, args.overwrite):
         sys.exit()
 
     surveys = find_survey_files(folder)
