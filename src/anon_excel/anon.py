@@ -221,18 +221,18 @@ def main():
         if not args.ttest:
             continue
 
-        # task: calculate paired t-test for each question common in
-        #       pre survey and post survay with student as independent var
-        log.info('Calculating paired Ttest from Pre- and Post survey')
+        log.info('Calculating paired T-test from Pre- and Post survey')
         df_pairs, df_combined, df_legend, df_bf, df_af, df_stud_pairs = paired_ttest(
             df_pre, df_post, id_column=ANONYMOUS_ID)
 
-        excel_output = folder / Path(output_base + '_' + pre_file.name[4:])
+        out_folder = folder / ANALYSIS_OUTPUT_BASE
+        check_create_out_folder(out_folder)
+        excel_output = out_folder / f'{ANALYSIS_OUTPUT_BASE}_{pre_file.name[4:]}'
         log.info(f'Writing analysis result to "{excel_output}"')
-        with pd.ExcelWriter(excel_output) as writer:
-            df_pairs.to_excel(writer, sheet_name='Paired Ttest', index=False)
+        with pd.ExcelWriter(excel_output, engine='xlsxwriter') as writer:
+            df_pairs.to_excel(writer, sheet_name='Paired T-test', index=False)
             df_stud_pairs.to_excel(
-                writer, sheet_name='Students Ttest', index=False)
+                writer, sheet_name='Students T-test', index=False)
             df_combined.to_excel(writer, sheet_name='Rankings', index=False)
             df_bf.to_excel(writer, sheet_name='Pre-questions', index=False)
             df_af.to_excel(writer, sheet_name='Post-questions', index=False)
