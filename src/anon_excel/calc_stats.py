@@ -5,9 +5,6 @@ from anon_excel.ranking_data import rank_lookup
 
 
 log = logging.getLogger(__name__)
-ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
-log.addHandler(ch)
 
 
 def category_to_rank(df: pd.DataFrame) -> pd.DataFrame:
