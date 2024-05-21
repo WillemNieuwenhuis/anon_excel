@@ -45,7 +45,8 @@ def get_parser() -> argparse.ArgumentParser:
     '''Setup a command line parser'''
     parser = argparse.ArgumentParser(
         description='''This app scans multiple sets of surveys. The survey data
-         is cleaned up, and optionally a T-test analysis is performed.
+         is cleaned up and optionally saved (default:no), and optionally
+         a T-test analysis is performed and saved (default:yes).
          Personal information is removed.
         '''
     )
@@ -58,16 +59,16 @@ def get_parser() -> argparse.ArgumentParser:
         required=False,
         help='Specify the columns (by name) to make anonymous')
     parser.add_argument(
-        '-x', '--cleanonly',
+        '-x', '--clean',
         action='store_true',
         required=False,
         default=False,
-        help='Read and clean the data, overrides -t')
+        help='Read and clean the data')
     parser.add_argument(
         '-t', '--ttest',
         action='store_true',
         required=False,
-        default=True,
+        default=False,
         help='Perform T-test calculation')
     parser.add_argument(
         '-o', '--overwrite',

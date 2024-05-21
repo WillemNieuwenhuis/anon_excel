@@ -11,10 +11,10 @@ This will also install all dependencies (pandas and scipy).
 ## Usage
 
 ```
-usage: anonex [-h] [-c COLUMN [COLUMN ...]] [-o] folder
+usage: anonex [-h] [-c COLUMN [COLUMN ...]] [-x] [-t] [-o] folder
 
-This app will calculate paired T-test statistics on sets of surveys. Personal information
-is anonymized.
+This app scans multiple sets of surveys. The survey data is cleaned up and optionally saved (default:no), and optionally a T-test analysis  
+is performed and saved (default:yes). Personal information is removed.
 
 positional arguments:
   folder                Specify the folder with the excel report(s)
@@ -23,6 +23,8 @@ options:
   -h, --help            show this help message and exit
   -c COLUMN [COLUMN ...], --column COLUMN [COLUMN ...]
                         Specify the columns (by name) to make anonymous
+  -x, --clean           Read and clean the data
+  -t, --ttest           Perform T-test calculation
   -o, --overwrite       Overwrite existing excel outputs
 ```
 
@@ -83,6 +85,7 @@ Turn ID codes in a unique code. This is done with a hashing function
 called "blake2b". This is a stable hashing function to guarantuee that the
 hashcode will be the same for the same student each time, as well as unique.
 
-The hashed code will be visible in the analysis result; all other identifyable 
+The hashed code will be only be visible in the optional cleaned data. In the analysis
+result the anonymized ID's are replaced with human readable ID's: **student_nn**; all other identifyable 
 data is absent from the analysis results.
 
