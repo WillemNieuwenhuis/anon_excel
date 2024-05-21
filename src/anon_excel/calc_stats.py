@@ -63,6 +63,22 @@ def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str
     df_bf = df_before[df_before[id_column].isin(stud_common)]
     df_af = df_after[df_after[id_column].isin(stud_common)]
 
+    # The id_column content can now be transformed into something more readable
+    # by adding an additional column to both surveys
+    # and removing the anonymized id_column
+    stud_count = len(stud_common)
+    stud_names = [f'student_{n:02}' for n in range(1, stud_count + 1)]
+    df_bf['student'] = stud_names
+    df_af['student'] = stud_names
+    df_bf = df_bf.drop(columns=[id_column])
+    df_af = df_af.drop(columns=[id_column])
+    # for the remainder: the id_column has now changed!
+    id_column = 'student'
+    # reorder columns
+    new_order = [id_column, *df_bf.columns[:-1]]
+    df_bf = df_bf[new_order]
+    df_af = df_af[new_order]
+
     # create shorthands for the questions
     quests_before = [f'before_{n:02}' for n in range(1, len(questions)+1)]
     quests_after = [f'after_{n:02}' for n in range(1, len(questions)+1)]
@@ -86,7 +102,7 @@ def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str
 
     # apply Ttest for each student
     stud_pairs = []
-    for stud in stud_common:
+    for stud in stud_names:
         before = df_bf[df_bf[id_column] == stud][quests_before[1:]].values[0]
         after = df_af[df_af[id_column] == stud][quests_after[1:]].values[0]
         res = stats.ttest_rel(before, after)
