@@ -102,7 +102,7 @@ def find_survey_files(folder: Path, allow_missing_post: bool = False) -> list[tu
     '''
     stem_pre = 'Pre'
     stem_post = 'Post'
-    files = folder.glob(f'/{stem_pre}*.xlsx')
+    files = list(folder.glob(f'{stem_pre}*.xlsx'))
     if len(files) == 0:
         print('No survey excel files found')
         return []
@@ -151,8 +151,8 @@ def remove_previous_results(files: list[Path], do_overwrite: bool, which_output:
 def check_remove_all_outputs(folder: Path, overwrite: bool) -> bool:
     for check in [ANALYSIS_OUTPUT_BASE, CLEANED_OUTPUT_BASE]:
         cur_fol = folder / check
-        prev = cur_fol.glob(f'{check}*.xlsx')
-        if not remove_previous_results(prev, check, overwrite):
+        prev = list(cur_fol.glob(f'{check}*.xlsx'))
+        if not remove_previous_results(prev, which_output=check, do_overwrite=overwrite):
             return False
 
     return True
