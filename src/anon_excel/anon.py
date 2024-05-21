@@ -132,6 +132,9 @@ def load_and_prepare_survey_data(survey_file: str, namecol: str) -> pd.DataFrame
 
 
 def remove_previous_results(files: list[Path], do_overwrite: bool, which_output: str) -> bool:
+    if not files:
+        return True
+
     prev = [Path(p).name for p in files]
     if do_overwrite:
         log.info(f'Trying to remove previous {which_output} results: \n{prev}')
