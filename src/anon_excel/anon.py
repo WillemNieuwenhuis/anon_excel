@@ -158,6 +158,14 @@ def check_remove_all_outputs(folder: Path, overwrite: bool) -> bool:
     return True
 
 
+def check_create_out_folder(folder: Path):
+    '''Make sure folder exists'''
+    if folder.exists() and folder.is_dir():
+        return True
+
+    folder.mkdir()
+
+
 def main():
     args = get_parser().parse_args()
 
@@ -187,6 +195,30 @@ def main():
             df_post = load_and_prepare_survey_data(post_file, id_column)
         else:
             log.info('No accompanying post file, skipping T-test')
+
+        if args.clean:
+            out_folder = folder / CLEANED_OUTPUT_BASE
+            check_create_out_folder(out_folder)
+            clean_output = out_folder / f'{CLEANED_OUTPUT_BASE}_{pre_file.name[4:]}'
+            columns = df_pre.columns
+            # filter out the sensitive columns
+            remain_columns = [col for col in columns if col not in DROP_COLUMNS]
+            log.info(f'Writing cleaned data to "{clean_output}"')
+            with pd.ExcelWriter(clean_output, engine='xlsxwriter') as writer:
+                df_pre_filt = df_pre[remain_columns]
+                df_pre_filt.to_excel(writer, sheet_name='Clean pre-survey', index=False)
+                if post_file:
+                    columns = df_post.columns
+                    remain_columns = [col for col in columns if col not in DROP_COLUMNS]
+                    df_post_filt = df_post[remain_columns]
+                    df_post_filt.to_excel(
+                        writer, sheet_name='Clean post-survey', index=False)
+
+        # T-test is only possible whith both pre- and post_survey files
+        if not post_file:
+            continue
+
+        if not args.ttest:
             continue
 
         # task: calculate paired t-test for each question common in
