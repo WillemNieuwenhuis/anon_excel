@@ -13,8 +13,9 @@ This will also install all dependencies (pandas and scipy).
 ```
 usage: anonex [-h] [-c COLUMN [COLUMN ...]] [-x] [-t] [-o] folder
 
-This app scans multiple sets of surveys. The survey data is cleaned up and optionally saved (default:no), and optionally a T-test analysis  
-is performed and saved (default:yes). Personal information is removed.
+This app scans multiple sets of surveys. The survey data is cleaned up and optionally saved.
+Optionally a T-test analysis is performed and saved.
+Personal information is removed.
 
 positional arguments:
   folder                Specify the folder with the excel report(s)
@@ -73,11 +74,14 @@ The application will generate multiple outputs:
 ### Approach
 1. Find sets of surveys, if none found stop.
 1. Clean the survey data
+1. Optionally save the cleanup data. Data will be stored in subfolder **cleaned**
+1. App is finished if no T-test is specified
 1. Hash the student data to remove possibility of identification
 1. Recode the categorical ranking into numerical values 
 1. Extract only the common questions from both surveys
 1. Filter the data to only use data from students participating in both surveys
 1. Calculate the T-test for each question
+1. Save the result to the subfolder **analysis**
 
 ### Anonymize student ID's
 
