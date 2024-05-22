@@ -181,7 +181,7 @@ def main():
     if not check_remove_all_outputs(folder, args.overwrite):
         sys.exit()
 
-    surveys = find_survey_files(folder)
+    surveys = find_survey_files(folder, allow_missing_post=args.clean)
     if not surveys:
         log.error('No survey files found, quitting')
         sys.exit()
