@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from anon_excel.calc_stats import category_to_rank
+from anon_excel.ranking_data import load_from_folder, get_rank_lookup
 
 RANK_TEST_DATA = [{'Your student number': 's123495',
                    'I trust others in this course': 'Strongly agree (SA)',
@@ -18,10 +20,14 @@ RANK_TEST_DATA = [{'Your student number': 's123495',
                    'I trust others in this course': 'Strongly Disagree (SD)',
                    'I feel reluctant to speak openly': 'Strongly Disagree (SD)'}]
 
+load_from_folder(Path('data'))
+
 
 def test_category_to_rank_do_not_change_input():
     df = pd.DataFrame(RANK_TEST_DATA)
+
     _ = category_to_rank(df)
+
     q1_orig = df['I trust others in this course'].values
     assert q1_orig[0] == 'Strongly agree (SA)'
 
