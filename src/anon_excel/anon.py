@@ -238,7 +238,7 @@ def main():
             df_pairs.to_excel(writer, sheet_name='Paired T-test', index=False)
             df_stud_pairs.to_excel(
                 writer, sheet_name='Students T-test', index=False)
-            df_combined.to_excel(writer, sheet_name='Rankings', index=False)
+            # df_combined.to_excel(writer, sheet_name='Rankings', index=False)
             df_bf.to_excel(writer, sheet_name='Pre-questions', index=False)
             df_af.to_excel(writer, sheet_name='Post-questions', index=False)
             df_legend.to_excel(
