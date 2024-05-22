@@ -26,7 +26,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3 :: Only",
 ]
-dependencies = ["pandas", "openpyxl", "scipy"]
+dependencies = ["pandas", "xlsxwriter", "openpyxl", "scipy"]
 [project.optional-dependencies]
 dev = ["check-manifest"]
 test = ["pytest", "pytest-cov", "flake8"]
