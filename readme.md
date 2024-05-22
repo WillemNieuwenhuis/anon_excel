@@ -56,24 +56,27 @@ Properties of the surveys:
 
 ### Ranking table
 An additional input is the translation table to link the categorical
-survey values to numerical values. For example:
+survey values to numerical values. The location is assumed to be in the same
+folder as the survey data files. For now the name of this ranking table is fixed to:
 
 ```
 Scoring.xlsx
 ```
 
-## Requirements
-The application will generate multiple outputs:
+## Application requirements
+The application can generate multiple outputs. T-test is optional. For T-test
+cleaning will always be excecuted.
+- Output of cleanup up data for both pre-survey and post-survey data
 - Paired T-test results, for both dimensions: questions and students
-- Table with numerical rankings per question for all students: one with
-   pre- and post survey questions combined, one table with the pre-survey
-   questions and one with the post-survey questions. Only questions
-   common to pre- and post- survey are included
+- Descriptive statistics for the questions
+- Table with numerical rankings per question for all students: one table
+   with the pre-survey questions and one with the post-survey questions. 
+   Only questions common to pre- and post- survey are included
 - A legend connecting the shorthand question names with the original question
 
 ### Approach
 1. Find sets of surveys, if none found stop.
-1. Clean the survey data
+1. Clean the survey data; for cleaning only post-survey data is not required
 1. Optionally save the cleanup data. Data will be stored in subfolder **cleaned**
 1. App is finished if no T-test is specified
 1. Hash the student data to remove possibility of identification
