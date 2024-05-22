@@ -92,13 +92,27 @@ def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str
         quests_before, quests_after) for q in tup]]
     df_combined = df_combined[combined_cols]
 
-    # Apply Ttest for each question
+    # calculate descriptive stats (mean, stdev, median) for each question
+    # in both pre- and post-surveys
+    tr_bf = df_bf[quests_before]
+    stat_bf = tr_bf.describe()
+    tr_af = df_af[quests_after]
+    stat_af = tr_af.describe()
+    mean_bf = stat_bf.loc['mean'].values
+    std_bf = stat_bf.loc['std'].values
+    mean_af = stat_af.loc['mean'].values
+    std_af = stat_af.loc['std'].values
+
+    # Apply T-test for each question
     pairs = []
-    for bef, aft, question in zip(quests_before, quests_after, questions):
+    for bef, aft, question, m_bf, s_bf, m_af, s_af in zip(quests_before, quests_after, questions,
+                                                          mean_bf, std_bf,
+                                                          mean_af, std_af):
         df_q = df_combined[[id_column, bef, aft]]
         res = stats.ttest_rel(df_q[bef].values, df_q[aft].values)
-        pairs.append(
-            {'question': question, 'statistic': res.statistic, 'pvalue': res.pvalue})
+        pairs.append({'question': question, 'statistic': res.statistic, 'pvalue': res.pvalue,
+                      'mean_pre': m_bf, 'std_pre': s_bf,
+                      'mean_post': m_af, 'std_post': s_af})
 
     # apply Ttest for each student
     stud_pairs = []
