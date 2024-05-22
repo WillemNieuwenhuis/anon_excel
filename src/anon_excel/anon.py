@@ -190,7 +190,7 @@ def main():
         log.info('Initiating analysis')
         log.info(f'Pre-survey file: "{pre_file}"')
         df_pre = load_and_prepare_survey_data(pre_file, id_column)
-        if post_file:
+        if post_file.name:
             log.info(f'Post-survey file: "{post_file}"')
             df_post = load_and_prepare_survey_data(post_file, id_column)
         else:
@@ -207,7 +207,7 @@ def main():
             with pd.ExcelWriter(clean_output, engine='xlsxwriter') as writer:
                 df_pre_filt = df_pre[remain_columns]
                 df_pre_filt.to_excel(writer, sheet_name='Clean pre-survey', index=False)
-                if post_file:
+                if post_file.name:
                     columns = df_post.columns
                     remain_columns = [col for col in columns if col not in DROP_COLUMNS]
                     df_post_filt = df_post[remain_columns]
