@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 import pandas as pd
 from anon_excel.calc_stats import category_to_rank, paired_ttest
+from anon_excel.ranking_data import load_from_folder
 
 log = logging.getLogger(__name__)
 
@@ -186,6 +187,10 @@ def main():
         log.error('No survey files found, quitting')
         sys.exit()
 
+    # init ranking lookup
+    load_from_folder(args.folder)
+
+    # start processing
     for pre_file, post_file in surveys:
         log.info('Initiating analysis')
         log.info(f'Pre-survey file: "{pre_file}"')

@@ -1,7 +1,7 @@
 import pandas as pd
 from pathlib import Path
 
-SCORING_DATA_FILE = Path('data/Scoring.xlsx')
+SCORING_DATA_FILE = Path('Scoring.xlsx')
 EXPECTED_COLUMNS = ['question', 'Strongly agree (SA)', 'Agree (A)', 'Neutral (N)',
                     'Disagree (D)', 'Strongly Disagree (SD)']
 
@@ -17,4 +17,13 @@ def read_ranking_data(fn: Path, worksheet: str = 'Scoring') -> pd.DataFrame:
     return ranking
 
 
-rank_lookup = read_ranking_data(SCORING_DATA_FILE)
+rank_lookup = None
+
+
+def load_from_folder(folder: Path) -> None:
+    global rank_lookup
+    rank_lookup = read_ranking_data(folder / SCORING_DATA_FILE)
+
+
+def get_rank_lookup() -> pd.DataFrame:
+    return rank_lookup

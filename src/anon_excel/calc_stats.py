@@ -1,7 +1,7 @@
 import logging
 import pandas as pd
 from scipy import stats
-from anon_excel.ranking_data import rank_lookup
+from anon_excel.ranking_data import get_rank_lookup
 
 
 log = logging.getLogger(__name__)
@@ -12,7 +12,7 @@ def category_to_rank(df: pd.DataFrame) -> pd.DataFrame:
     '''
     log.info('Transform categories to numerical values')
     df_rank = df.copy()
-    for question, ranks in rank_lookup.items():
+    for question, ranks in get_rank_lookup().items():
         if question in list(df_rank.columns):
             # strip whitespace
             df_rank[question] = df_rank[question].replace(r'\s+', ' ', regex=True)
@@ -25,7 +25,7 @@ def determine_common_questions(bf_quest: list, af_quest: list) -> list:
     '''
         Find questions available in both surveys
     '''
-    qset = set(rank_lookup.keys())
+    qset = set(get_rank_lookup().keys())
     col_set_before = set(bf_quest)
     col_set_after = set(af_quest)
     common_cols = col_set_before.intersection(col_set_after)
