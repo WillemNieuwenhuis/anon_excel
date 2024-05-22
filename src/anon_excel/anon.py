@@ -204,7 +204,7 @@ def main():
         if args.clean:
             out_folder = folder / CLEANED_OUTPUT_BASE
             check_create_out_folder(out_folder)
-            clean_output = out_folder / f'{CLEANED_OUTPUT_BASE}_{pre_file.name[4:]}'
+            clean_output = out_folder / f'{CLEANED_OUTPUT_BASE}_{pre_file.name}'
             columns = df_pre.columns
             # filter out the sensitive columns
             remain_columns = [col for col in columns if col not in DROP_COLUMNS]
