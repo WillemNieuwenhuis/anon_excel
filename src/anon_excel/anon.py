@@ -149,8 +149,10 @@ def remove_previous_results(files: list[Path], do_overwrite: bool, which_output:
     return False
 
 
-def check_remove_all_outputs(folder: Path, overwrite: bool) -> bool:
-    for check in [ANALYSIS_OUTPUT_BASE, CLEANED_OUTPUT_BASE]:
+def check_remove_all_outputs(folder: Path, clean: bool, ttest: bool, overwrite: bool) -> bool:
+    for check, rem in zip([ANALYSIS_OUTPUT_BASE, CLEANED_OUTPUT_BASE], [ttest, clean or ttest]):
+        if not rem:
+            continue
         cur_fol = folder / check
         prev = list(cur_fol.glob(f'{check}*.xlsx'))
         if not remove_previous_results(prev, which_output=check, do_overwrite=overwrite):
