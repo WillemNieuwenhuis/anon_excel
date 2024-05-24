@@ -169,9 +169,13 @@ def check_create_out_folder(folder: Path):
     folder.mkdir()
 
 
-def main():
-    args = get_parser().parse_args()
+def write_to_excel(filename: Path, sheets: tuple[list[pd.DataFrame], str]) -> None:
+    with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
+        for df, sheetname in sheets:
+            df.to_excel(writer, sheet_name=sheetname, index=False)
 
+
+def validate_input(args) -> tuple[Path, str]:
     folder = Path(args.folder)
     if not folder.exists:
         log.error('Folder {args.folder} does not exist')
@@ -181,8 +185,55 @@ def main():
     if args.column:
         id_column = args.column[0]
 
-    if not check_remove_all_outputs(folder, args.overwrite):
+    if not check_remove_all_outputs(folder,
+                                    clean=args.clean,
+                                    ttest=args.ttest,
+                                    overwrite=args.overwrite):
         sys.exit()
+    return folder, id_column
+
+
+def clean_and_save_survey_data(folder: Path,
+                               pre_file: Path, post_file: Path,
+                               df_pre: pd.DataFrame, df_post: pd.DataFrame):
+    out_folder = folder / CLEANED_OUTPUT_BASE
+    check_create_out_folder(out_folder)
+    clean_output = out_folder / f'{CLEANED_OUTPUT_BASE}_{pre_file.name}'
+
+    # filter out the sensitive columns and prepare for output
+    remain_columns = [col for col in df_pre.columns if col not in DROP_COLUMNS]
+    clean_data = [(df_pre[remain_columns], 'Clean pre-survey')]
+    if post_file.name:
+        remain_columns = [
+            col for col in df_post.columns if col not in DROP_COLUMNS]
+        clean_data.append((df_post[remain_columns], 'Clean post-survey'))
+
+    log.info(f'Writing cleaned data to "{clean_output}"')
+    write_to_excel(clean_output, sheets=clean_data)
+
+
+def ttest_and_save(folder: Path, pre_file: Path, df_pre: pd.DataFrame, df_post: pd.DataFrame):
+    log.info('Calculating paired T-test from Pre- and Post survey')
+    df_pairs, _, df_legend, df_bf, df_af, df_stud_pairs = paired_ttest(
+        df_pre, df_post, id_column=ANONYMOUS_ID)
+
+    out_folder = folder / ANALYSIS_OUTPUT_BASE
+    check_create_out_folder(out_folder)
+    excel_output = out_folder / f'{ANALYSIS_OUTPUT_BASE}_{pre_file.name[4:]}'
+    ttest_output = [(df_pairs, 'Paired T-test'),
+                    (df_stud_pairs, 'Students T-test'),
+                    (df_bf, 'Pre-questions'),
+                    (df_af, 'Post-questions'),
+                    (df_legend, 'Question legend')]
+
+    log.info(f'Writing analysis result to "{excel_output}"')
+    write_to_excel(excel_output, sheets=ttest_output)
+
+
+def main():
+    args = get_parser().parse_args()
+
+    folder, id_column = validate_input(args)
 
     surveys = find_survey_files(folder, allow_missing_post=args.clean)
     if not surveys:
@@ -201,50 +252,16 @@ def main():
             log.info(f'Post-survey file: "{post_file}"')
             df_post = load_and_prepare_survey_data(post_file, id_column)
         else:
-            log.info('No accompanying post file, skipping T-test')
+            log.info('No accompanying post file')
+            if args.ttest:
+                log.info('Skipping T-test')
 
         if args.clean:
-            out_folder = folder / CLEANED_OUTPUT_BASE
-            check_create_out_folder(out_folder)
-            clean_output = out_folder / f'{CLEANED_OUTPUT_BASE}_{pre_file.name}'
-            columns = df_pre.columns
-            # filter out the sensitive columns
-            remain_columns = [col for col in columns if col not in DROP_COLUMNS]
-            log.info(f'Writing cleaned data to "{clean_output}"')
-            with pd.ExcelWriter(clean_output, engine='xlsxwriter') as writer:
-                df_pre_filt = df_pre[remain_columns]
-                df_pre_filt.to_excel(writer, sheet_name='Clean pre-survey', index=False)
-                if post_file.name:
-                    columns = df_post.columns
-                    remain_columns = [col for col in columns if col not in DROP_COLUMNS]
-                    df_post_filt = df_post[remain_columns]
-                    df_post_filt.to_excel(
-                        writer, sheet_name='Clean post-survey', index=False)
+            clean_and_save_survey_data(folder, pre_file, post_file, df_pre, df_post)
 
         # T-test is only possible whith both pre- and post_survey files
-        if not post_file:
-            continue
-
-        if not args.ttest:
-            continue
-
-        log.info('Calculating paired T-test from Pre- and Post survey')
-        df_pairs, df_combined, df_legend, df_bf, df_af, df_stud_pairs = paired_ttest(
-            df_pre, df_post, id_column=ANONYMOUS_ID)
-
-        out_folder = folder / ANALYSIS_OUTPUT_BASE
-        check_create_out_folder(out_folder)
-        excel_output = out_folder / f'{ANALYSIS_OUTPUT_BASE}_{pre_file.name[4:]}'
-        log.info(f'Writing analysis result to "{excel_output}"')
-        with pd.ExcelWriter(excel_output, engine='xlsxwriter') as writer:
-            df_pairs.to_excel(writer, sheet_name='Paired T-test', index=False)
-            df_stud_pairs.to_excel(
-                writer, sheet_name='Students T-test', index=False)
-            # df_combined.to_excel(writer, sheet_name='Rankings', index=False)
-            df_bf.to_excel(writer, sheet_name='Pre-questions', index=False)
-            df_af.to_excel(writer, sheet_name='Post-questions', index=False)
-            df_legend.to_excel(
-                writer, sheet_name='Question legend', index=False)
+        if args.ttest and post_file.name:
+            ttest_and_save(folder, pre_file, df_pre, df_post)
 
 
 if __name__ == '__main__':
