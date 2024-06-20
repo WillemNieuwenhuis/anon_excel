@@ -45,10 +45,11 @@ def transform_to_anonymous(df: pd.DataFrame,
 def get_parser() -> argparse.ArgumentParser:
     '''Setup a command line parser'''
     parser = argparse.ArgumentParser(
-        description='''This app scans multiple sets of surveys. The survey data
-         is cleaned up and optionally saved (default:no), and optionally
-         a T-test analysis is performed and saved (default:yes).
-         Personal information is removed.
+        description='''This app scans multiple sets of surveys. It offers an option
+         to clean and store the survey data, and also an option to perform and store
+         a T-test analysis. The T-test is only possible when both pre- and post-
+         survey is available.
+         Any personal information is removed.
         '''
     )
     parser.add_argument(
@@ -64,13 +65,13 @@ def get_parser() -> argparse.ArgumentParser:
         action='store_true',
         required=False,
         default=False,
-        help='Read and clean the data')
+        help='Save cleaned data (default = No)')
     parser.add_argument(
         '-t', '--ttest',
         action='store_true',
         required=False,
         default=False,
-        help='Perform T-test calculation')
+        help='Perform T-test calculation (default = No)')
     parser.add_argument(
         '-o', '--overwrite',
         action='store_true',
@@ -238,6 +239,10 @@ def main():
     surveys = find_survey_files(folder, allow_missing_post=args.clean)
     if not surveys:
         log.error('No survey files found, quitting')
+        sys.exit()
+
+    if not args.clean and not args.ttest:
+        log.info('No cleaning or t-test requested, nothing to do, quitting')
         sys.exit()
 
     # init ranking lookup
