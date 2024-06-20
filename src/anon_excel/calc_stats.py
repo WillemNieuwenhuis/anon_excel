@@ -68,8 +68,8 @@ def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str
     # and removing the anonymized id_column
     stud_count = len(stud_common)
     stud_names = [f'student_{n:02}' for n in range(1, stud_count + 1)]
-    df_bf['student'] = stud_names
-    df_af['student'] = stud_names
+    df_bf = df_bf.assign(student=stud_names)
+    df_af = df_af.assign(student=stud_names)
     df_bf = df_bf.drop(columns=[id_column])
     df_af = df_af.drop(columns=[id_column])
     # for the remainder: the id_column has now changed!
