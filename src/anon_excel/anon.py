@@ -204,12 +204,12 @@ def determine_survey_data_name(survey_file: Path, sequence_nr: int) -> str:
        1. survey_data_(n-m)
        2. survey_data_<sequence_nr>
     '''
+    patt = f'{sequence_nr:02}'
+
     regex = r'.*(\(\d+-\d+\))'
     m = re.match(regex, survey_file.name)
-    if len(m.groups()) == 1:
+    if m and (len(m.groups()) == 1):
         patt = m.group(1)
-    else:
-        patt = f'{sequence_nr:02}'
 
     return f'{DATA_OUTPUT_BASENAME}_{patt}'
 
