@@ -3,6 +3,7 @@ import logging
 from hashlib import blake2b
 import os
 from pathlib import Path
+import re
 import sys
 import pandas as pd
 from anon_excel.calc_stats import category_to_rank, paired_ttest
@@ -12,6 +13,7 @@ log = logging.getLogger(__name__)
 
 ANALYSIS_OUTPUT_BASE = 'analysis'
 CLEANED_OUTPUT_BASE = 'cleaned'
+DATA_OUTPUT_BASENAME = 'data_survey'
 ANONYMOUS_ID = 'student_anon'
 
 # name of ID column in the surveys:
@@ -194,12 +196,33 @@ def validate_input(args) -> tuple[Path, str]:
     return folder, id_column
 
 
+def determine_survey_data_name(survey_file: Path, sequence_nr: int) -> str:
+    '''Extract a sequence ID from filename. The pattern looked for is
+       `(n-m)` where n, m are integer values, fe. `(1-89)`. If this cannot
+       be found the `sequence_nr` will be used instead to generate a filename.
+       The name generated will then be either:
+       1. survey_data_(n-m)
+       2. survey_data_<sequence_nr>
+    '''
+    regex = r'.*(\(\d+-\d+\))'
+    m = re.match(regex, survey_file.name)
+    if len(m.groups()) == 1:
+        patt = m.group(1)
+    else:
+        patt = f'{sequence_nr:02}'
+
+    return f'{DATA_OUTPUT_BASENAME}_{patt}'
+
+
 def clean_and_save_survey_data(folder: Path,
                                pre_file: Path, post_file: Path,
-                               df_pre: pd.DataFrame, df_post: pd.DataFrame):
+                               df_pre: pd.DataFrame, df_post: pd.DataFrame,
+                               seq_nr: int):
     out_folder = folder / CLEANED_OUTPUT_BASE
     check_create_out_folder(out_folder)
-    clean_output = out_folder / f'{CLEANED_OUTPUT_BASE}_{pre_file.name}'
+    clean_output = out_folder / \
+        f'{CLEANED_OUTPUT_BASE}_{determine_survey_data_name(
+            pre_file, sequence_nr=seq_nr)}.xlsx'
 
     # filter out the sensitive columns and prepare for output
     remain_columns = [col for col in df_pre.columns if col not in DROP_COLUMNS]
@@ -213,14 +236,17 @@ def clean_and_save_survey_data(folder: Path,
     write_to_excel(clean_output, sheets=clean_data)
 
 
-def ttest_and_save(folder: Path, pre_file: Path, df_pre: pd.DataFrame, df_post: pd.DataFrame):
+def ttest_and_save(folder: Path, pre_file: Path,
+                   df_pre: pd.DataFrame, df_post: pd.DataFrame,
+                   seq_nr: int):
     log.info('Calculating paired T-test from Pre- and Post survey')
     df_pairs, _, df_legend, df_bf, df_af, df_stud_pairs = paired_ttest(
         df_pre, df_post, id_column=ANONYMOUS_ID)
 
     out_folder = folder / ANALYSIS_OUTPUT_BASE
     check_create_out_folder(out_folder)
-    excel_output = out_folder / f'{ANALYSIS_OUTPUT_BASE}_{pre_file.name[4:]}'
+    excel_output = out_folder / \
+        f'{ANALYSIS_OUTPUT_BASE}_{determine_survey_data_name(pre_file, seq_nr)}.xlsx'
     ttest_output = [(df_pairs, 'Paired T-test'),
                     (df_stud_pairs, 'Students T-test'),
                     (df_bf, 'Pre-questions'),
@@ -249,7 +275,7 @@ def main():
     load_from_folder(args.folder)
 
     # start processing
-    for pre_file, post_file in surveys:
+    for seq_nr, (pre_file, post_file) in enumerate(surveys, start=1):
         log.info('Initiating analysis')
         log.info(f'Pre-survey file: "{pre_file}"')
         df_pre = load_and_prepare_survey_data(pre_file, id_column)
@@ -262,11 +288,12 @@ def main():
                 log.info('Skipping T-test')
 
         if args.clean:
-            clean_and_save_survey_data(folder, pre_file, post_file, df_pre, df_post)
+            clean_and_save_survey_data(
+                folder, pre_file, post_file, df_pre, df_post, seq_nr)
 
         # T-test is only possible whith both pre- and post_survey files
         if args.ttest and post_file.name:
-            ttest_and_save(folder, pre_file, df_pre, df_post)
+            ttest_and_save(folder, pre_file, df_pre, df_post, seq_nr)
 
 
 if __name__ == '__main__':
