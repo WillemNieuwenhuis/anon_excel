@@ -191,8 +191,6 @@ def validate_input(args) -> tuple[Path, str]:
         sys.exit(1)
 
     id_column = DEFAULT_STUDENT_COLUMN
-    if args.column:
-        id_column = args.column[0]
 
     if not check_remove_all_outputs(folder,
                                     clean=args.clean,
