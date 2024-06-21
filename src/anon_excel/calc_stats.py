@@ -44,6 +44,18 @@ def determine_common_students(bf_studs: list, af_studs: list) -> list:
     return stud_common
 
 
+def determine_distinct_students(df_before: pd.DataFrame,
+                                df_after: pd.DataFrame,
+                                id_column: str) -> tuple[list[str]]:
+    studs_before = set(df_before[id_column].values)
+    studs_after = set(df_after[id_column].values)
+    common = studs_before.intersection(studs_after)
+    before_only = studs_before.difference(studs_after)
+    after_only = studs_after.difference(studs_before)
+
+    return (common, before_only, after_only)
+
+
 def paired_ttest(df_before: pd.DataFrame, df_after: pd.DataFrame, id_column: str) -> \
         tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame,
               pd.DataFrame, pd.DataFrame, pd.DataFrame]:
