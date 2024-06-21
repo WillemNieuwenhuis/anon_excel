@@ -11,22 +11,19 @@ This will also install all dependencies (pandas and scipy).
 ## Usage
 
 ```
-usage: anonex [-h] [-c COLUMN [COLUMN ...]] [-x] [-t] [-o] folder
+usage: anonex [-h] [-c] [-x] [-t] [-o] folder
 
-This app scans multiple sets of surveys. The survey data is cleaned up and optionally saved.
-Optionally a T-test analysis is performed and saved.
-Personal information is removed.
+This app scans multiple sets of surveys. It offers an option to clean and store the survey data, and also an option to perform and store a T-test analysis. The T-test is only possible when both pre- and post- survey is available. Any personal information is removed.
 
 positional arguments:
-  folder                Specify the folder with the excel report(s)
+  folder           Specify the folder with the excel report(s)
 
 options:
-  -h, --help            show this help message and exit
-  -c COLUMN [COLUMN ...], --column COLUMN [COLUMN ...]
-                        Specify the columns (by name) to make anonymous
-  -x, --clean           Read and clean the data
-  -t, --ttest           Perform T-test calculation
-  -o, --overwrite       Overwrite existing excel outputs
+  -h, --help       show this help message and exit
+  -c, --color      Add colors in excel file with clean ranked data
+  -x, --clean      Save cleaned data (default = No)
+  -t, --ttest      Perform T-test calculation (default = No)
+  -o, --overwrite  Overwrite existing excel outputs
 ```
 
 ## The surveys
@@ -36,14 +33,13 @@ pre-course survey contains the survey result before lecture/workshop/course.
 The post-course survey contains survey results obtained after the
 lecture/workshop/course.
 
-Multiple sets of pre- and post-course surveys are allowed.
-The filenames of pre- and post-course surveys are the same, but the
-pre-course survey starts with `Pre`, while the post-course surveys starts
-with `Post`. For example:
+Only a single set of pre- and post-course surveys is expected.
+The filenames of pre- and post-course surveys are unique: the pre-course survey
+starts with `Pre`, the post-course surveys starts with `Post`. For example:
 
 ```
-Pre-Course Survey_ Perceived Sense of Community in Blended Learning(1-5).xlsx
-Post-Course Survey_ Perceived Sense of Community in Blended Learning(1-5).xlsx
+Pre-Course Survey_ Perceived Sense of Community in Blended Learning(1-89).xlsx
+Post-Course Survey_ Perceived Sense of Community in Blended Learning(1-34).xlsx
 ```
 
 Properties of the surveys:
