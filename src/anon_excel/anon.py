@@ -30,7 +30,8 @@ DROP_COLUMNS = ['ID', 'Start time', 'Completion time',
 
 
 def transform_to_anonymous(df: pd.DataFrame,
-                           on_column: str, to_column: str) -> pd.DataFrame:
+                           on_column: str, to_column: str,
+                           drop_source: bool = True) -> pd.DataFrame:
     '''find student number column and anonymize, using
        the blake2b stable hash function
        return unchanged if column is not in dataframe
@@ -45,7 +46,8 @@ def transform_to_anonymous(df: pd.DataFrame,
     ix = cur_cols.index(on_column)
     new_cols = cur_cols[0:ix] + cur_cols[-1:] + cur_cols[ix:-1]
     df = df[new_cols]
-    df = df.drop(columns=[on_column])
+    if drop_source:
+        df = df.drop(columns=[on_column])
     return df
 
 
@@ -134,8 +136,9 @@ def load_and_prepare_survey_data(survey_file: str, namecol: str) -> pd.DataFrame
        (in the `namecol` field) into anonymized values, and translate the
        answer code into numerical rankings, according to the `scoring.xlsx` data'''
     df = read_and_clean(Path(survey_file), namecol)
-    df = transform_to_anonymous(
-        df, on_column=namecol, to_column=ANONYMOUS_ID)
+    df = transform_to_anonymous(df,
+                                on_column=namecol, to_column=ANONYMOUS_ID,
+                                drop_source=False)
     df_ranked = category_to_rank(df)
 
     return df_ranked
