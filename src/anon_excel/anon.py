@@ -6,7 +6,10 @@ from pathlib import Path
 import re
 import sys
 import pandas as pd
-from anon_excel.calc_stats import category_to_rank, paired_ttest
+from openpyxl import load_workbook
+from openpyxl.styles import PatternFill
+from anon_excel.calc_stats import (
+    category_to_rank, determine_distinct_students, paired_ttest)
 from anon_excel.ranking_data import load_from_folder
 
 log = logging.getLogger(__name__)
@@ -15,6 +18,8 @@ ANALYSIS_OUTPUT_BASE = 'analysis'
 CLEANED_OUTPUT_BASE = 'cleaned'
 DATA_OUTPUT_BASENAME = 'data_survey'
 ANONYMOUS_ID = 'student_anon'
+CLEAN_SHEET_PRE_SURVEY = 'Clean pre-survey'
+CLEAN_SHEET_POST_SURVEY = 'Clean post-survey'
 
 # name of ID column in the surveys:
 # Note that this column will NOT end up in the cleaned and final outputs
@@ -58,10 +63,11 @@ def get_parser() -> argparse.ArgumentParser:
         'folder',
         help='Specify the folder with the excel report(s)')
     parser.add_argument(
-        '-c', '--column',
-        nargs='+',
+        '-c', '--color',
+        action='store_true',
         required=False,
-        help='Specify the columns (by name) to make anonymous')
+        default=False,
+        help='Add colors in excel file with clean ranked data')
     parser.add_argument(
         '-x', '--clean',
         action='store_true',
@@ -217,7 +223,7 @@ def determine_survey_data_name(survey_file: Path, sequence_nr: int) -> str:
 def clean_and_save_survey_data(folder: Path,
                                pre_file: Path, post_file: Path,
                                df_pre: pd.DataFrame, df_post: pd.DataFrame,
-                               seq_nr: int):
+                               seq_nr: int) -> Path:
     out_folder = folder / CLEANED_OUTPUT_BASE
     check_create_out_folder(out_folder)
     clean_output = out_folder / \
@@ -226,14 +232,16 @@ def clean_and_save_survey_data(folder: Path,
 
     # filter out the sensitive columns and prepare for output
     remain_columns = [col for col in df_pre.columns if col not in DROP_COLUMNS]
-    clean_data = [(df_pre[remain_columns], 'Clean pre-survey')]
+    clean_data = [(df_pre[remain_columns], CLEAN_SHEET_PRE_SURVEY)]
     if post_file.name:
         remain_columns = [
             col for col in df_post.columns if col not in DROP_COLUMNS]
-        clean_data.append((df_post[remain_columns], 'Clean post-survey'))
+        clean_data.append((df_post[remain_columns], CLEAN_SHEET_POST_SURVEY))
 
     log.info(f'Writing cleaned data to "{clean_output}"')
     write_to_excel(clean_output, sheets=clean_data)
+
+    return clean_output
 
 
 def ttest_and_save(folder: Path, pre_file: Path,
@@ -255,6 +263,58 @@ def ttest_and_save(folder: Path, pre_file: Path,
 
     log.info(f'Writing analysis result to "{excel_output}"')
     write_to_excel(excel_output, sheets=ttest_output)
+
+# Function to find the column index of 'id_column'
+
+
+def find_id_column_index(worksheet, column_name: str):
+    for cell in worksheet[1]:  # Iterate over the first row (header)
+        if cell.value == column_name:
+            return cell.col_idx - 1  # Return zero-based index
+
+
+def colorize_excel(excel_file: Path, df_pre: pd.DataFrame, df_post: pd.DataFrame, id_column: str):
+    book = load_workbook(excel_file)
+
+    stud_common, studs_before_only, stud_after_only = determine_distinct_students(
+        df_pre, df_post, id_column)
+
+    # Define fills
+    fill_green = PatternFill(start_color="CCFFCC",
+                             end_color="CCFFCC", fill_type="solid")
+    fill_blue = PatternFill(start_color="CCCCFF", end_color="CCCCFF", fill_type="solid")
+    fill_red = PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
+
+    # Get the worksheets
+    ws_pre = book[CLEAN_SHEET_PRE_SURVEY]
+    ws_post = book[CLEAN_SHEET_POST_SURVEY]
+
+    # get index of the id_column
+    id_col_idx_pre = find_id_column_index(ws_pre, ANONYMOUS_ID)
+    id_col_idx_post = find_id_column_index(ws_post, ANONYMOUS_ID)
+
+    # Apply conditional formatting for survey_pre
+    for row in ws_pre.iter_rows(min_row=2, max_row=ws_pre.max_row, min_col=1, max_col=ws_pre.max_column):
+        cell_value = row[id_col_idx_pre].value
+        if cell_value in stud_common:
+            for cell in row:
+                cell.fill = fill_green
+        elif cell_value in studs_before_only:
+            for cell in row:
+                cell.fill = fill_blue
+
+    # Apply conditional formatting for survey_post
+    for row in ws_post.iter_rows(min_row=2, max_row=ws_post.max_row, min_col=1, max_col=ws_post.max_column):
+        cell_value = row[id_col_idx_post].value
+        if cell_value in stud_common:
+            for cell in row:
+                cell.fill = fill_green
+        elif cell_value in stud_after_only:
+            for cell in row:
+                cell.fill = fill_red
+
+    # Save the updated Excel file
+    book.save(excel_file)
 
 
 def main():
@@ -288,8 +348,12 @@ def main():
                 log.info('Skipping T-test')
 
         if args.clean:
-            clean_and_save_survey_data(
+            clean_output = clean_and_save_survey_data(
                 folder, pre_file, post_file, df_pre, df_post, seq_nr)
+
+            # optionally apply styles/colors
+            if args.color:
+                colorize_excel(clean_output, df_pre, df_post, ANONYMOUS_ID)
 
         # T-test is only possible whith both pre- and post_survey files
         if args.ttest and post_file.name:
