@@ -253,8 +253,8 @@ def clean_and_save_survey_data(folder: Path,
     out_folder = folder / CLEANED_OUTPUT_BASE
     check_create_out_folder(out_folder)
     clean_output = out_folder / \
-        f'{CLEANED_OUTPUT_BASE}_{determine_survey_data_name(
-            pre_file, sequence_nr=seq_nr)}.xlsx'
+        f'''{CLEANED_OUTPUT_BASE}_{determine_survey_data_name(
+            pre_file, sequence_nr=seq_nr)}.xlsx'''
 
     # filter out the sensitive columns and prepare for output
     remain_columns = [col for col in df_pre.columns if col not in DROP_COLUMNS]
