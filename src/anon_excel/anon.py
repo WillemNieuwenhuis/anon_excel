@@ -3,9 +3,10 @@ import logging
 from hashlib import blake2b
 import os
 from pathlib import Path
-import re
-import sys
 import pandas as pd
+import re
+import string
+import sys
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 from anon_excel.calc_stats import (
