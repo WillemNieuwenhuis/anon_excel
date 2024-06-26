@@ -42,7 +42,7 @@ def transform_to_anonymous(df: pd.DataFrame,
 
     series = df[on_column]
     df[to_column] = series.apply(lambda s: blake2b(
-        bytes(s, 'utf-8'), digest_size=8).hexdigest()).astype('string')
+        bytes(s.strip(), 'utf-8'), digest_size=8).hexdigest()).astype('string')
     cur_cols = list(df.columns)
     ix = cur_cols.index(on_column)
     new_cols = cur_cols[0:ix] + cur_cols[-1:] + cur_cols[ix:-1]
@@ -83,6 +83,12 @@ def get_parser() -> argparse.ArgumentParser:
         required=False,
         default=False,
         help='Perform T-test calculation (default = No)')
+    parser.add_argument(
+        '-s', '--strip',
+        action='store_true',
+        required=False,
+        default=False,
+        help='Strip leading char (only non-numeric) from s-number')
     parser.add_argument(
         '-o', '--overwrite',
         action='store_true',
@@ -132,11 +138,29 @@ def find_survey_files(folder: Path, allow_missing_post: bool = False) -> list[tu
     return surveys
 
 
-def load_and_prepare_survey_data(survey_file: str, namecol: str) -> pd.DataFrame:
-    '''Read survey file, remove invalid data, transcode the personal ID's
-       (in the `namecol` field) into anonymized values, and translate the
-       answer code into numerical rankings, according to the `scoring.xlsx` data'''
+def strip_leading_letter(name: str) -> str:
+    if not name.startswith(tuple(string.digits)):
+        return name[1:]
+
+    return name
+
+
+def strip_leading_letter_from_column(df: pd.DataFrame, namecol: str) -> pd.DataFrame:
+    series = df[namecol]
+    df[namecol] = series.apply(strip_leading_letter)
+
+    return df
+
+
+def load_and_prepare_survey_data(survey_file: str, namecol: str, strip: bool) -> pd.DataFrame:
+    '''Read survey file, remove invalid data, remove leading letter if any from
+       personal ID, transcode this personal ID's (in the `namecol` field) into
+       anonymized values, and translate the answer code into numerical rankings,
+       according to the `scoring.xlsx` data
+    '''
     df = read_and_clean(Path(survey_file), namecol)
+    if strip:
+        df = strip_leading_letter_from_column(df, namecol)
     df = transform_to_anonymous(df,
                                 on_column=namecol, to_column=ANONYMOUS_ID,
                                 drop_source=False)
@@ -340,10 +364,10 @@ def main():
     for seq_nr, (pre_file, post_file) in enumerate(surveys, start=1):
         log.info('Initiating analysis')
         log.info(f'Pre-survey file: "{pre_file}"')
-        df_pre = load_and_prepare_survey_data(pre_file, id_column)
+        df_pre = load_and_prepare_survey_data(pre_file, id_column, args.strip)
         if post_file.name:
             log.info(f'Post-survey file: "{post_file}"')
-            df_post = load_and_prepare_survey_data(post_file, id_column)
+            df_post = load_and_prepare_survey_data(post_file, id_column, args.strip)
         else:
             log.info('No accompanying post file')
             if args.ttest:
