@@ -28,8 +28,8 @@ classifiers = [
 ]
 dependencies = ["pandas", "xlsxwriter", "openpyxl", "scipy"]
 [project.optional-dependencies]
-dev = ["check-manifest"]
-test = ["pytest", "pytest-cov", "flake8"]
+dev = ["check-manifest", "build"]
+test = ["pytest", "pytest-cov", "flake8", "mock"]
 
 [project.urls]
 "Homepage" = "https://github.com/pypa/anon_excel"
