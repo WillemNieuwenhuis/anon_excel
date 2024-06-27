@@ -11,19 +11,22 @@ This will also install all dependencies (pandas and scipy).
 ## Usage
 
 ```
-usage: anonex [-h] [-c] [-x] [-t] [-o] folder
+usage: anonex [-h] [-a] [-c] [-o] [-s] [-t] [-x] folder
 
-This app scans multiple sets of surveys. It offers an option to clean and store the survey data, and also an option to perform and store a T-test analysis. The T-test is only possible when both pre- and post- survey is available. Any personal information is removed.
+This app scans multiple sets of surveys. It offers an option to clean and store the survey data, and also an option to perform and store a T-test analysis. The T-test is only possible when both pre- and post- survey is available.
+Optionally personal information is removed.
 
 positional arguments:
   folder           Specify the folder with the excel report(s)
 
 options:
   -h, --help       show this help message and exit
-  -c, --color      Add colors in excel file with clean ranked data
-  -x, --clean      Save cleaned data (default = No)
+  -a, --anonymize  Anonymize personal data (default = No)
+  -c, --color      Add colors in excel file with clean ranked data (default = No)
+  -o, --overwrite  Overwrite existing excel outputs (default = No)
+  -s, --strip      Strip leading s-char from s-number (default = No)
   -t, --ttest      Perform T-test calculation (default = No)
-  -o, --overwrite  Overwrite existing excel outputs
+  -x, --clean      Save cleaned data (default = No)
 ```
 
 ## The surveys
@@ -59,10 +62,17 @@ folder as the survey data files. For now the name of this ranking table is fixed
 Scoring.xlsx
 ```
 
+>[!**Note**]
+The ranking table is unique for each set of surveys.
+
+
 ## Application requirements
-The application can generate multiple outputs. T-test is optional. For T-test
-cleaning will always be excecuted.
+The application can generate multiple outputs:  both cleaned data and T-test are optional.
+When a T-test is calculated cleaning will also be run, but saving the cleaned data is still
+optional.
+Cleaned data excel file:
 - Output of cleanup up data for both pre-survey and post-survey data
+Analysis output excel file:
 - Paired T-test results, for both dimensions: questions and students
 - Descriptive statistics for the questions
 - Table with numerical rankings per question for all students: one table
@@ -72,14 +82,15 @@ cleaning will always be excecuted.
 
 ### Approach
 1. Find sets of surveys, if none found stop.
+1. Optionally encrypt the student data to remove possibility of identification
+1. Recode the categorical ranking into numerical values 
 1. Clean the survey data; for cleaning only post-survey data is not required
 1. Optionally save the cleanup data. Data will be stored in subfolder **cleaned**
 1. App is finished if no T-test is specified
-1. Hash the student data to remove possibility of identification
-1. Recode the categorical ranking into numerical values 
 1. Extract only the common questions from both surveys
 1. Filter the data to only use data from students participating in both surveys
 1. Calculate the T-test for each question
+1. Calculate the T-test for each student
 1. Save the result to the subfolder **analysis**
 
 ### Anonymize student ID's
@@ -88,7 +99,8 @@ Turn ID codes in a unique code. This is done with a hashing function
 called "blake2b". This is a stable hashing function to guarantuee that the
 hashcode will be the same for the same student each time, as well as unique.
 
-The hashed code will be only be visible in the optional cleaned data. In the analysis
-result the anonymized ID's are replaced with human readable ID's: **student_nn**; all other identifyable 
-data is absent from the analysis results.
+The hashed code will be only be visible in the optional cleaned data, and when
+the `anonymize` command line parameter is set appropriately. In the analysis
+result the anonymized ID's are replaced with human readable ID's: **student_nn**;
+all other identifyable data is absent from the analysis results.
 
