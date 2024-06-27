@@ -112,6 +112,8 @@ def read_and_clean(excel_name: Path, column: str) -> pd.DataFrame:
     df = df.astype({column: 'string'})
     names = df[column]
     df[column] = names.apply(lambda x: x.strip())
+    # throw away duplicate student records (keep first)
+    df = df.drop_duplicates(subset=[column])
 
     return df
 
