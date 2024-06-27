@@ -57,24 +57,36 @@ def get_parser() -> argparse.ArgumentParser:
          to clean and store the survey data, and also an option to perform and store
          a T-test analysis. The T-test is only possible when both pre- and post-
          survey is available.
-         Any personal information is removed.
+         Optionally personal information is removed.
         '''
     )
     parser.add_argument(
         'folder',
         help='Specify the folder with the excel report(s)')
     parser.add_argument(
+        '-a', '--anonymize',
+        action='count',
+        required=False,
+        default=0,
+        help='Anonymize personal data (default = No)')
+    parser.add_argument(
         '-c', '--color',
         action='store_true',
         required=False,
         default=False,
-        help='Add colors in excel file with clean ranked data')
+        help='Add colors in excel file with clean ranked data (default = No)')
     parser.add_argument(
-        '-x', '--clean',
+        '-o', '--overwrite',
         action='store_true',
         required=False,
         default=False,
-        help='Save cleaned data (default = No)')
+        help='Overwrite existing excel outputs (default = No)')
+    parser.add_argument(
+        '-s', '--strip',
+        action='store_true',
+        required=False,
+        default=False,
+        help='Strip leading s-char from s-number (default = No)')
     parser.add_argument(
         '-t', '--ttest',
         action='store_true',
@@ -82,16 +94,11 @@ def get_parser() -> argparse.ArgumentParser:
         default=False,
         help='Perform T-test calculation (default = No)')
     parser.add_argument(
-        '-s', '--strip',
+        '-x', '--clean',
         action='store_true',
         required=False,
         default=False,
-        help='Strip leading char (only non-numeric) from s-number')
-    parser.add_argument(
-        '-o', '--overwrite',
-        action='store_true',
-        required=False,
-        help='Overwrite existing excel outputs')
+        help='Save cleaned data (default = No)')
 
     return parser
 
@@ -249,7 +256,14 @@ def determine_survey_data_name(survey_file: Path, sequence_nr: int) -> str:
 def clean_and_save_survey_data(folder: Path,
                                pre_file: Path, post_file: Path,
                                df_pre: pd.DataFrame, df_post: pd.DataFrame,
-                               seq_nr: int) -> Path:
+                               seq_nr: int,
+                               anonymize: int) -> Path:
+    ''' Save survey data to excel. Only keep relevant columns.
+        Depending on the command line parameter `anonymize` the following happens:
+        `anonymize=0` : student ID column is retained, no anonymized data in output
+        `anonymize=1` : student ID column is retained, also anonymized data in output
+        `anonymize=2` : student ID column is removed, only anonymized data in output
+    '''
     out_folder = folder / CLEANED_OUTPUT_BASE
     check_create_out_folder(out_folder)
     clean_output = out_folder / \
@@ -257,11 +271,18 @@ def clean_and_save_survey_data(folder: Path,
             pre_file, sequence_nr=seq_nr)}.xlsx'''
 
     # filter out the sensitive columns and prepare for output
-    remain_columns = [col for col in df_pre.columns if col not in DROP_COLUMNS]
+    cols_to_drop = DROP_COLUMNS
+    if anonymize == 0:  # 0 == drop anonymized data
+        log.info(f'Do not save anonymized data, {anonymize=}')
+        cols_to_drop = [*DROP_COLUMNS, ANONYMOUS_ID]
+    if anonymize == 2:  # 2 == drop sensitive data
+        log.info(f'Removing sensitive data, {anonymize=}')
+        cols_to_drop = [*DROP_COLUMNS, DEFAULT_STUDENT_COLUMN]
+    remain_columns = [col for col in df_pre.columns if col not in cols_to_drop]
     clean_data = [(df_pre[remain_columns], CLEAN_SHEET_PRE_SURVEY)]
     if post_file.name:
         remain_columns = [
-            col for col in df_post.columns if col not in DROP_COLUMNS]
+            col for col in df_post.columns if col not in cols_to_drop]
         clean_data.append((df_post[remain_columns], CLEAN_SHEET_POST_SURVEY))
 
     log.info(f'Writing cleaned data to "{clean_output}"')
@@ -316,8 +337,8 @@ def colorize_excel(excel_file: Path, df_pre: pd.DataFrame, df_post: pd.DataFrame
     ws_post = book[CLEAN_SHEET_POST_SURVEY]
 
     # get index of the id_column
-    id_col_idx_pre = find_id_column_index(ws_pre, ANONYMOUS_ID)
-    id_col_idx_post = find_id_column_index(ws_post, ANONYMOUS_ID)
+    id_col_idx_pre = find_id_column_index(ws_pre, id_column)
+    id_col_idx_post = find_id_column_index(ws_post, id_column)
 
     # Apply conditional formatting for survey_pre
     for row in ws_pre.iter_rows(min_row=2, max_row=ws_pre.max_row, min_col=1, max_col=ws_pre.max_column):
@@ -375,11 +396,16 @@ def main():
 
         if args.clean:
             clean_output = clean_and_save_survey_data(
-                folder, pre_file, post_file, df_pre, df_post, seq_nr)
+                folder, pre_file, post_file, df_pre, df_post,
+                seq_nr,
+                args.anonymize)
 
             # optionally apply styles/colors
             if args.color:
-                colorize_excel(clean_output, df_pre, df_post, ANONYMOUS_ID)
+                sel_col = ANONYMOUS_ID
+                if args.anonymize == 0:
+                    sel_col = id_column
+                colorize_excel(clean_output, df_pre, df_post, sel_col)
 
         # T-test is only possible whith both pre- and post_survey files
         if args.ttest and post_file.name:
