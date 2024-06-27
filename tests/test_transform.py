@@ -20,12 +20,12 @@ def test_transform_to_anonymous_no_id_col():
 
 
 def test_transform_to_anonymous_id_col_removed():
-    '''test that the on column data is removed after
+    '''test that the on column data is still around after
        succesfully anonimizing student numbers and the new
        anonimzed column has been added
     '''
     df = pd.DataFrame(ANONIMIZE_DATA)
 
     df_new = transform_to_anonymous(df, 'Your student number', 'anon')
-    assert 'Your student number' not in df_new.columns
+    assert 'Your student number' in df_new.columns
     assert 'anon' in df_new.columns

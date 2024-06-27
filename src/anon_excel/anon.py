@@ -31,10 +31,9 @@ DROP_COLUMNS = ['ID', 'Start time', 'Completion time',
 
 
 def transform_to_anonymous(df: pd.DataFrame,
-                           on_column: str, to_column: str,
-                           drop_source: bool = True) -> pd.DataFrame:
+                           on_column: str, to_column: str) -> pd.DataFrame:
     '''find student number column and anonymize, using
-       the blake2b stable hash function
+       the blake2b stable hash function. This will add a new column.
        return unchanged if column is not in dataframe
     '''
     if on_column not in df.columns:
@@ -47,8 +46,7 @@ def transform_to_anonymous(df: pd.DataFrame,
     ix = cur_cols.index(on_column)
     new_cols = cur_cols[0:ix] + cur_cols[-1:] + cur_cols[ix:-1]
     df = df[new_cols]
-    if drop_source:
-        df = df.drop(columns=[on_column])
+
     return df
 
 
@@ -161,9 +159,9 @@ def load_and_prepare_survey_data(survey_file: str, namecol: str, strip: bool) ->
     df = read_and_clean(Path(survey_file), namecol)
     if strip:
         df = strip_leading_letter_from_column(df, namecol)
-    df = transform_to_anonymous(df,
-                                on_column=namecol, to_column=ANONYMOUS_ID,
-                                drop_source=False)
+
+    df[namecol]
+    df = transform_to_anonymous(df, on_column=namecol, to_column=ANONYMOUS_ID)
     df_ranked = category_to_rank(df)
 
     return df_ranked
