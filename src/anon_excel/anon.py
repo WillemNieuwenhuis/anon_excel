@@ -159,11 +159,12 @@ def strip_leading_letter_from_column(df: pd.DataFrame, namecol: str) -> pd.DataF
     return df
 
 
-def load_and_prepare_survey_data(survey_file: str, namecol: str, strip: bool) -> pd.DataFrame:
+def load_and_prepare_survey_data(survey_file: str, namecol: str,
+                                 strip: bool) -> pd.DataFrame:
     '''Read survey file, remove invalid data, remove leading letter if any from
        personal ID, transcode this personal ID's (in the `namecol` field) into
-       anonymized values, and translate the answer code into numerical rankings,
-       according to the `scoring.xlsx` data
+       anonymized values, and translate the answer code into numerical
+       rankings, according to the `scoring.xlsx` data
     '''
     df = read_and_clean(Path(survey_file), namecol)
     if strip:
@@ -320,7 +321,9 @@ def find_id_column_index(worksheet, column_name: str):
             return cell.col_idx - 1  # Return zero-based index
 
 
-def colorize_excel(excel_file: Path, df_pre: pd.DataFrame, df_post: pd.DataFrame, id_column: str):
+def colorize_excel(excel_file: Path,
+                   df_pre: pd.DataFrame, df_post: pd.DataFrame,
+                   id_column: str):
     book = load_workbook(excel_file)
 
     stud_common, studs_before_only, stud_after_only = determine_distinct_students(
