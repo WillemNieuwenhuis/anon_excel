@@ -104,3 +104,9 @@ the `anonymize` command line parameter is set appropriately. In the analysis
 result the anonymized ID's are replaced with human readable ID's: **student_nn**;
 all other identifyable data is absent from the analysis results.
 
+The user can control how data is anonymized with the `-a` option:
+- if not specified no anomyzation is stored in the output
+- if `-a` is specified, anonymization is applied on the student ID column and
+  an additional column is added, the original ID column is retained.
+- if `-aa` is specified, anonymization is applied on the student ID column, an
+  additional column is added, the original ID column is removed
