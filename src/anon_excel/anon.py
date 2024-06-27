@@ -103,6 +103,8 @@ def read_and_clean(excel_name: Path, column: str) -> pd.DataFrame:
     df = pd.read_excel(excel_name)
     df = df.dropna(axis='index', subset=[column])
     df = df.astype({column: 'string'})
+    names = df[column]
+    df[column] = names.apply(lambda x: x.strip())
 
     return df
 
