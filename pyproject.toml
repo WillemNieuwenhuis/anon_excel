@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "anon_excel"
 version = "1.0.0"
-description = "Anonymize explicit person ID's"
+description = "Apply statistics (T-test) on dual surveys"
 readme = "README.md"
 requires-python = ">=3.8"
 license = { file = "LICENSE.txt" }
