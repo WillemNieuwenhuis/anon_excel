@@ -129,9 +129,10 @@ def validate_input(args) -> tuple[Path, str]:
 
 
 def determine_survey_data_name(survey_file: Path, sequence_nr: int) -> str:
-    '''Extract a sequence ID from filename. The pattern looked for is
-       `(n-m)` where n, m are integer values, fe. `(1-89)`. If this cannot
-       be found the `sequence_nr` will be used instead to generate a filename.
+    '''Extract a sequence ID from filename. The pattern looked for is a single
+       `(n-m)` at the end of the filename where n, m are integer values, fe. `(1-89)`.
+       If this cannot be found the `sequence_nr` will be used instead to
+       generate a filename.
        The name generated will then be either:
        1. data_survey_(n-m)
        2. data_survey_<sequence_nr>

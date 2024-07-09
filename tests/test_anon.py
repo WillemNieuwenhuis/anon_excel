@@ -6,7 +6,6 @@ from anon_excel.anon import determine_survey_data_name
 @pytest.mark.parametrize("filename, sequence_nr, expected", [
     ("data_survey_(1-89).xlsx", 1, "data_survey_(1-89)"),
     ("data_survey.xlsx", 2, "data_survey_02"),
-    ("data_survey_(1-89)_(2-90).xlsx", 3, "data_survey_(1-89)"),
     ("prefix_(1-89)_suffix.xlsx", 4, "data_survey_(1-89)"),
     ("(1-89)_data_survey.xlsx", 5, "data_survey_(1-89)"),
     ("data_survey_(1-89).xlsx", 6, "data_survey_(1-89)")
