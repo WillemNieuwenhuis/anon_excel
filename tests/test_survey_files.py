@@ -1,7 +1,8 @@
 from pathlib import Path
 import mock
 
-from anon_excel.anon import find_survey_files, remove_previous_results
+from anon_excel.anon import remove_previous_results
+from anon_excel.survey_files import find_survey_files, strip_leading_letter
 
 
 @mock.patch('anon_excel.anon.Path.glob')
@@ -64,3 +65,12 @@ def test_remove_previous_results_called_for_non_matching_files(mock_remove):
     remove_previous_results(files, do_overwrite=True, which_output='cleaned')
     assert mock_remove.call_count == 2
     assert mock_remove.call_args_list == [mock.call(f) for f in files]
+
+
+def test_strip_leading_letter():
+    assert strip_leading_letter('A123') == '123'
+    assert strip_leading_letter('B456789') == '456789'
+    assert strip_leading_letter('') == ''
+    assert strip_leading_letter('012') == '012'
+    assert strip_leading_letter('!345') == '345'
+    assert strip_leading_letter('345abc') == '345abc'

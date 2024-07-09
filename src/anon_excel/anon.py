@@ -1,53 +1,19 @@
 import argparse
 import logging
-from hashlib import blake2b
 import os
 from pathlib import Path
 import pandas as pd
 import re
-import string
 import sys
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 from anon_excel.calc_stats import (
-    category_to_rank, determine_distinct_students, paired_ttest)
-from anon_excel.ranking_data import load_from_folder
+    determine_distinct_students, paired_ttest)
+import anon_excel.constants as const
+from anon_excel.survey_files import find_survey_files, load_and_prepare_survey_data
+from anon_excel.ranking_data import load_ranking_from_folder
 
 log = logging.getLogger(__name__)
-
-ANALYSIS_OUTPUT_BASE = 'analysis'
-CLEANED_OUTPUT_BASE = 'cleaned'
-DATA_OUTPUT_BASENAME = 'data_survey'
-ANONYMOUS_ID = 'student_anon'
-CLEAN_SHEET_PRE_SURVEY = 'Clean pre-survey'
-CLEAN_SHEET_POST_SURVEY = 'Clean post-survey'
-
-# name of ID column in the surveys:
-# Note that this column will NOT end up in the cleaned and final outputs
-DEFAULT_STUDENT_COLUMN = 'Your student number'
-# columns to drop in cleaned output
-DROP_COLUMNS = ['ID', 'Start time', 'Completion time',
-                'Email', 'Name', 'Last modified time']
-
-
-def transform_to_anonymous(df: pd.DataFrame,
-                           on_column: str, to_column: str) -> pd.DataFrame:
-    '''find student number column and anonymize, using
-       the blake2b stable hash function. This will add a new column.
-       return unchanged if column is not in dataframe
-    '''
-    if on_column not in df.columns:
-        return df
-
-    series = df[on_column]
-    df[to_column] = series.apply(lambda s: blake2b(
-        bytes(s.strip(), 'utf-8'), digest_size=8).hexdigest()).astype('string')
-    cur_cols = list(df.columns)
-    ix = cur_cols.index(on_column)
-    new_cols = cur_cols[0:ix] + cur_cols[-1:] + cur_cols[ix:-1]
-    df = df[new_cols]
-
-    return df
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -103,82 +69,6 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def read_and_clean(excel_name: Path, column: str) -> pd.DataFrame:
-    '''Read the excel data, remove all records that have invalid
-       data in the `column` field (usually the user ID), and change
-       the type from Object to string'''
-    df = pd.read_excel(excel_name)
-    df = df.dropna(axis='index', subset=[column])
-    df = df.astype({column: 'string'})
-    names = df[column]
-    df[column] = names.apply(lambda x: x.strip())
-    # throw away duplicate student records (keep first)
-    df = df.drop_duplicates(subset=[column])
-
-    return df
-
-
-def find_survey_files(folder: Path, allow_missing_post: bool = False) -> list[tuple[Path, Path]]:
-    '''Find one or more sets of pre- and post survey excel files.
-       Assume the pre-survey excel files start with 'Pre' and the
-       post-survey excel files start with 'Post' with the remaining stems are equal.
-       The allow_missing_post setting is used to allow existence of pre-survey file only,
-       making it possible to pre-analyse / clean the data; the pre-survey file MUST
-       be available.
-       return tuples containing both a pre and a post survey file, where the post
-       survey file can be an empty path when allow_missing_post == true.
-    '''
-    stem_pre = 'Pre'
-    stem_post = 'Post'
-    files = list(folder.glob(f'{stem_pre}*.xlsx'))
-    if len(files) == 0:
-        print('No survey excel files found')
-        return []
-
-    files = [Path(f) for f in files]
-    surveys = []
-    for pre in files:
-        post_file = pre.with_stem(stem_post + pre.stem[len(stem_pre):])
-        if post_file.exists():
-            surveys.append((pre, post_file))
-        elif allow_missing_post:
-            surveys.append((pre, Path('')))
-
-    return surveys
-
-
-def strip_leading_letter(name: str) -> str:
-    if not name.startswith(tuple(string.digits)):
-        return name[1:]
-
-    return name
-
-
-def strip_leading_letter_from_column(df: pd.DataFrame, namecol: str) -> pd.DataFrame:
-    series = df[namecol]
-    df[namecol] = series.apply(strip_leading_letter)
-
-    return df
-
-
-def load_and_prepare_survey_data(survey_file: str, namecol: str,
-                                 strip: bool) -> pd.DataFrame:
-    '''Read survey file, remove invalid data, remove leading letter if any from
-       personal ID, transcode this personal ID's (in the `namecol` field) into
-       anonymized values, and translate the answer code into numerical
-       rankings, according to the `scoring.xlsx` data
-    '''
-    df = read_and_clean(Path(survey_file), namecol)
-    if strip:
-        df = strip_leading_letter_from_column(df, namecol)
-
-    df[namecol]
-    df = transform_to_anonymous(df, on_column=namecol, to_column=ANONYMOUS_ID)
-    df_ranked = category_to_rank(df)
-
-    return df_ranked
-
-
 def remove_previous_results(files: list[Path], do_overwrite: bool, which_output: str) -> bool:
     if not files:
         return True
@@ -197,7 +87,7 @@ def remove_previous_results(files: list[Path], do_overwrite: bool, which_output:
 
 
 def check_remove_all_outputs(folder: Path, clean: bool, ttest: bool, overwrite: bool) -> bool:
-    for check, rem in zip([ANALYSIS_OUTPUT_BASE, CLEANED_OUTPUT_BASE], [ttest, clean or ttest]):
+    for check, rem in zip([const.ANALYSIS_OUTPUT_BASE, const.CLEANED_OUTPUT_BASE], [ttest, clean or ttest]):
         if not rem:
             continue
         cur_fol = folder / check
@@ -228,7 +118,7 @@ def validate_input(args) -> tuple[Path, str]:
         log.error('Folder {args.folder} does not exist')
         sys.exit(1)
 
-    id_column = DEFAULT_STUDENT_COLUMN
+    id_column = const.DEFAULT_STUDENT_COLUMN
 
     if not check_remove_all_outputs(folder,
                                     clean=args.clean,
@@ -243,8 +133,8 @@ def determine_survey_data_name(survey_file: Path, sequence_nr: int) -> str:
        `(n-m)` where n, m are integer values, fe. `(1-89)`. If this cannot
        be found the `sequence_nr` will be used instead to generate a filename.
        The name generated will then be either:
-       1. survey_data_(n-m)
-       2. survey_data_<sequence_nr>
+       1. data_survey_(n-m)
+       2. data_survey_<sequence_nr>
     '''
     patt = f'{sequence_nr:02}'
 
@@ -253,7 +143,7 @@ def determine_survey_data_name(survey_file: Path, sequence_nr: int) -> str:
     if m and (len(m.groups()) == 1):
         patt = m.group(1)
 
-    return f'{DATA_OUTPUT_BASENAME}_{patt}'
+    return f'{const.DATA_OUTPUT_BASENAME}_{patt}'
 
 
 def clean_and_save_survey_data(folder: Path,
@@ -267,26 +157,26 @@ def clean_and_save_survey_data(folder: Path,
         `anonymize=1` : student ID column is retained, also anonymized data in output
         `anonymize=2` : student ID column is removed, only anonymized data in output
     '''
-    out_folder = folder / CLEANED_OUTPUT_BASE
+    out_folder = folder / const.CLEANED_OUTPUT_BASE
     check_create_out_folder(out_folder)
     clean_output = out_folder / \
-        f'''{CLEANED_OUTPUT_BASE}_{determine_survey_data_name(
+        f'''{const.CLEANED_OUTPUT_BASE}_{determine_survey_data_name(
             pre_file, sequence_nr=seq_nr)}.xlsx'''
 
     # filter out the sensitive columns and prepare for output
-    cols_to_drop = DROP_COLUMNS
+    cols_to_drop = const.DROP_COLUMNS
     if anonymize == 0:  # 0 == drop anonymized data
         log.info(f'Do not save anonymized data, {anonymize=}')
-        cols_to_drop = [*DROP_COLUMNS, ANONYMOUS_ID]
+        cols_to_drop = [*const.DROP_COLUMNS, const.ANONYMOUS_ID]
     if anonymize == 2:  # 2 == drop sensitive data
         log.info(f'Removing sensitive data, {anonymize=}')
-        cols_to_drop = [*DROP_COLUMNS, DEFAULT_STUDENT_COLUMN]
+        cols_to_drop = [*const.DROP_COLUMNS, const.DEFAULT_STUDENT_COLUMN]
     remain_columns = [col for col in df_pre.columns if col not in cols_to_drop]
-    clean_data = [(df_pre[remain_columns], CLEAN_SHEET_PRE_SURVEY)]
+    clean_data = [(df_pre[remain_columns], const.CLEAN_SHEET_PRE_SURVEY)]
     if post_file.name:
         remain_columns = [
             col for col in df_post.columns if col not in cols_to_drop]
-        clean_data.append((df_post[remain_columns], CLEAN_SHEET_POST_SURVEY))
+        clean_data.append((df_post[remain_columns], const.CLEAN_SHEET_POST_SURVEY))
 
     log.info(f'Writing cleaned data to "{clean_output}"')
     write_to_excel(clean_output, sheets=clean_data)
@@ -299,12 +189,13 @@ def ttest_and_save(folder: Path, pre_file: Path,
                    seq_nr: int):
     log.info('Calculating paired T-test from Pre- and Post survey')
     df_pairs, _, df_legend, df_bf, df_af, df_stud_pairs = paired_ttest(
-        df_pre, df_post, id_column=ANONYMOUS_ID)
+        df_pre, df_post, id_column=const.ANONYMOUS_ID)
 
-    out_folder = folder / ANALYSIS_OUTPUT_BASE
+    out_folder = folder / const.ANALYSIS_OUTPUT_BASE
     check_create_out_folder(out_folder)
     excel_output = out_folder / \
-        f'{ANALYSIS_OUTPUT_BASE}_{determine_survey_data_name(pre_file, seq_nr)}.xlsx'
+        f'{const.ANALYSIS_OUTPUT_BASE}_{
+            determine_survey_data_name(pre_file, seq_nr)}.xlsx'
     ttest_output = [(df_pairs, 'Paired T-test'),
                     (df_stud_pairs, 'Students T-test'),
                     (df_bf, 'Pre-questions'),
@@ -338,8 +229,8 @@ def colorize_excel(excel_file: Path,
     fill_red = PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
 
     # Get the worksheets
-    ws_pre = book[CLEAN_SHEET_PRE_SURVEY]
-    ws_post = book[CLEAN_SHEET_POST_SURVEY]
+    ws_pre = book[const.CLEAN_SHEET_PRE_SURVEY]
+    ws_post = book[const.CLEAN_SHEET_POST_SURVEY]
 
     # get index of the id_column
     id_col_idx_pre = find_id_column_index(ws_pre, id_column)
@@ -384,7 +275,7 @@ def main():
         sys.exit()
 
     # init ranking lookup
-    load_from_folder(args.folder)
+    load_ranking_from_folder(args.folder)
 
     # start processing
     for seq_nr, (pre_file, post_file) in enumerate(surveys, start=1):
@@ -407,7 +298,7 @@ def main():
 
             # optionally apply styles/colors
             if args.color:
-                sel_col = ANONYMOUS_ID
+                sel_col = const.ANONYMOUS_ID
                 if args.anonymize == 0:
                     sel_col = id_column
                 colorize_excel(clean_output, df_pre, df_post, sel_col)

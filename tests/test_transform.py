@@ -1,6 +1,6 @@
 import pandas as pd
 
-from anon_excel.anon import transform_to_anonymous
+from anon_excel.survey_files import transform_to_anonymous
 
 ANONIMIZE_DATA = [{'Your student number': 's12345',
                    'q1': 'Agree (A)',
