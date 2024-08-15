@@ -20,7 +20,7 @@ RANK_TEST_DATA = [{'Your student number': 's123495',
                    'I trust others in this course': 'Strongly Disagree (SD)',
                    'I feel reluctant to speak openly': 'Strongly Disagree (SD)'}]
 
-load_ranking_from_folder(Path('data'))
+load_ranking_from_folder(Path('tests/test_data'))
 
 
 def test_category_to_rank_do_not_change_input():
