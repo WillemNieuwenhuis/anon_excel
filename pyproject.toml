@@ -32,8 +32,8 @@ dev = ["check-manifest", "build"]
 test = ["pytest", "pytest-cov", "flake8", "mock"]
 
 [project.urls]
-"Homepage" = "https://github.com/pypa/anon_excel"
-"Source" = "https://github.com/pypa/anon_excel/"
+"Homepage" = "https://github.com/WillemNieuwenhuis/anon_excel"
+"Source" = "https://github.com/WillemNieuwenhuis/anon_excel"
 
 # The following would provide a command line executable called `sample`
 # which executes the function `main` from this package when invoked.
