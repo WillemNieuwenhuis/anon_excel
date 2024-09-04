@@ -110,3 +110,19 @@ The user can control how data is anonymized with the `-a` option:
   an additional column is added, the original ID column is retained.
 - if `-aa` is specified, anonymization is applied on the student ID column, an
   additional column is added, the original ID column is removed
+
+### Example command lines
+Display help text
+```anonex -h```
+
+Clean pre-survey data, removing letters from student numbers
+```anonex -s -x <survey data folder>```
+
+Clean pre-survey data, removing non-digits from student numbers and
+anonymizing student numbers, overwriting any existing previous results.
+```anonex -s -x -aa -o <survey data folder>```
+
+Clean pre-survey data, removing non-digits from student numbers and
+anonymizing student numbers, performing t-test analysis, overwriting 
+any existing previous results.
+```anonex -s -x -t -aa -o <survey data folder>```
