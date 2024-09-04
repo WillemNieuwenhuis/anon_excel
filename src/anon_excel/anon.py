@@ -149,7 +149,7 @@ def determine_survey_data_name(survey_file: Path, sequence_nr: int) -> str:
 
 def clean_and_save_survey_data(folder: Path,
                                pre_file: Path, post_file: Path,
-                               df_pre: pd.DataFrame, df_post: pd.DataFrame,
+                               df_pre: pd.DataFrame, df_post: pd.DataFrame | None,
                                seq_nr: int,
                                anonymize: int) -> Path:
     ''' Save survey data to excel. Only keep relevant columns.
@@ -287,6 +287,7 @@ def main():
             log.info(f'Post-survey file: "{post_file}"')
             df_post = load_and_prepare_survey_data(post_file, id_column, args.strip)
         else:
+            df_post = None
             log.info('No accompanying post file')
             if args.ttest:
                 log.info('Skipping T-test')
