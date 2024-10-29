@@ -189,7 +189,7 @@ def ttest_and_save(folder: Path, pre_file: Path,
                    df_pre: pd.DataFrame, df_post: pd.DataFrame,
                    seq_nr: int):
     log.info('Calculating paired T-test from Pre- and Post survey')
-    df_pairs, _, df_legend, df_bf, df_af, df_stud_pairs = paired_ttest(
+    df_pairs, _, df_post_only, df_bf, df_af, df_stud_pairs = paired_ttest(
         df_pre, df_post, id_column=const.ANONYMOUS_ID)
 
     out_folder = folder / const.ANALYSIS_OUTPUT_BASE
@@ -201,15 +201,14 @@ def ttest_and_save(folder: Path, pre_file: Path,
                     (df_stud_pairs, 'Students T-test'),
                     (df_bf, 'Pre-questions'),
                     (df_af, 'Post-questions'),
-                    (df_legend, 'Question legend')]
+                    (df_post_only, 'Post-only')]
 
     log.info(f'Writing analysis result to "{excel_output}"')
     write_to_excel(excel_output, sheets=ttest_output)
 
-# Function to find the column index of 'id_column'
-
 
 def find_id_column_index(worksheet, column_name: str):
+    ''' Function to find the column index of 'id_column' '''
     for cell in worksheet[1]:  # Iterate over the first row (header)
         if cell.value == column_name:
             return cell.col_idx - 1  # Return zero-based index
