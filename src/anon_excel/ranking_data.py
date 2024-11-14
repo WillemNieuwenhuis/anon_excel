@@ -20,9 +20,12 @@ def read_ranking_data(fn: Path, worksheet: str = 'Scoring') -> pd.DataFrame:
 rank_lookup = None
 
 
-def load_ranking_from_folder(folder: Path) -> None:
+def load_ranking_from_folder(folder: Path) -> bool:
     global rank_lookup
-    rank_lookup = read_ranking_data(folder / SCORING_DATA_FILE)
+    if (folder / SCORING_DATA_FILE).exists():
+        rank_lookup = read_ranking_data(folder / SCORING_DATA_FILE)
+        return True
+    return False
 
 
 def get_rank_lookup() -> pd.DataFrame:

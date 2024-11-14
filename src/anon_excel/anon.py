@@ -275,7 +275,9 @@ def main():
         sys.exit()
 
     # init ranking lookup
-    load_ranking_from_folder(args.folder)
+    if not load_ranking_from_folder(args.folder):
+        log.error('Ranking data file missing, quitting')
+        sys.exit()
 
     # start processing
     for seq_nr, (pre_file, post_file) in enumerate(surveys, start=1):
