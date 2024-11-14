@@ -299,14 +299,14 @@ def main():
                 seq_nr,
                 args.anonymize)
 
-            # optionally apply styles/colors
-            if args.color:
+            # optionally apply styles/colors; only when both pre- and post_survey are available
+            if args.color and post_file.name:
                 sel_col = const.ANONYMOUS_ID
                 if args.anonymize == 0:
                     sel_col = id_column
                 colorize_excel(clean_output, df_pre, df_post, sel_col)
 
-        # T-test is only possible whith both pre- and post_survey files
+        # T-test is only possible with both pre- and post_survey files
         if args.ttest and post_file.name:
             ttest_and_save(folder, pre_file, df_pre, df_post, seq_nr)
 
